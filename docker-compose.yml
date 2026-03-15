@@ -1,0 +1,64 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: repsol-filament-app
+    environment:
+      APP_ENV: local
+      APP_DEBUG: "true"
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_DATABASE: repsol_filament
+      DB_USERNAME: repsol
+      DB_PASSWORD: secret
+    command: >
+      sh -lc "if [ ! -f vendor/autoload.php ]; then composer install --no-interaction --prefer-dist; fi; php-fpm"
+    volumes:
+      - ./:/var/www/html:cached
+      - vendor-data:/var/www/html/vendor
+    depends_on:
+      - db
+
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: repsol-filament-nginx
+    ports:
+      - "8000:80"
+    volumes:
+      - ./:/var/www/html:cached
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - app
+
+  db:
+    image: mysql:8.0
+    container_name: repsol-filament-db
+    ports:
+      - "3307:3306"
+    environment:
+      MYSQL_DATABASE: repsol_filament
+      MYSQL_USER: repsol
+      MYSQL_PASSWORD: secret
+      MYSQL_ROOT_PASSWORD: root
+    command: --default-authentication-plugin=mysql_native_password --innodb-flush-log-at-trx-commit=2 --sync-binlog=0
+    volumes:
+      - mysql-data-v2:/var/lib/mysql
+
+  node:
+    image: node:22
+    container_name: repsol-filament-node
+    working_dir: /var/www/html
+    environment:
+      CHOKIDAR_USEPOLLING: "1"
+      CHOKIDAR_INTERVAL: "250"
+    volumes:
+      - ./:/var/www/html:cached
+      - node-modules-data:/var/www/html/node_modules
+    command: >
+      sh -lc "if [ ! -d node_modules ] || [ -z \"$(ls -A node_modules 2>/dev/null)\" ]; then npm ci; fi; rm -f public/hot; npm run build"
+
+volumes:
+  mysql-data-v2:
+  vendor-data:
+  node-modules-data:

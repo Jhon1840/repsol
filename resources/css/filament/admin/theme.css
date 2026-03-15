@@ -1,0 +1,107 @@
+@import '../../../../vendor/filament/filament/resources/css/theme.css';
+
+@source '../../../../app/Filament/**/*';
+@source '../../../../resources/views/filament/**/*';
+
+@layer base {
+    :root {
+        --repsol-night: #0a1a2f;
+        --repsol-steel: #3f5c79;
+        --repsol-orange: #e6932a;
+        --repsol-red: #c12a3a;
+        --repsol-soft: #f0d98a;
+    }
+
+    html,
+    body {
+        font-family: "Segoe UI", "Inter", sans-serif;
+    }
+
+    body {
+        background:
+            radial-gradient(circle at top left, rgba(230, 147, 42, 0.22), transparent 32%),
+            radial-gradient(circle at top right, rgba(193, 42, 58, 0.18), transparent 28%),
+            linear-gradient(180deg, #f7f8fb 0%, #eef3f8 100%);
+    }
+
+    .dark body {
+        background:
+            radial-gradient(circle at top left, rgba(230, 147, 42, 0.16), transparent 30%),
+            radial-gradient(circle at top right, rgba(193, 42, 58, 0.2), transparent 24%),
+            linear-gradient(180deg, #09111f 0%, #101b2e 100%);
+    }
+}
+
+@layer components {
+    .fi-simple-layout,
+    .fi-page {
+        position: relative;
+    }
+
+    .fi-simple-layout::before,
+    .fi-page::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        background-image: linear-gradient(rgba(63, 92, 121, 0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(63, 92, 121, 0.06) 1px, transparent 1px);
+        background-size: 32px 32px;
+        mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.8), transparent 85%);
+    }
+
+    .fi-simple-main,
+    .fi-ta-ctn,
+    .fi-sidebar,
+    .fi-topbar,
+    .fi-page-header-main-ctn {
+        backdrop-filter: blur(16px);
+    }
+
+    .fi-simple-main,
+    .fi-ta-ctn,
+    .fi-sidebar,
+    .fi-topbar,
+    .fi-page-header-main-ctn,
+    .fi-modal-window {
+        border-radius: 1.5rem;
+    }
+
+    .fi-sidebar {
+        background: linear-gradient(180deg, rgba(10, 26, 47, 0.94), rgba(24, 40, 64, 0.88));
+        color: white;
+    }
+
+    .fi-topbar {
+        background: rgba(255, 255, 255, 0.72);
+    }
+
+    .dark .fi-topbar {
+        background: rgba(10, 26, 47, 0.72);
+    }
+
+    .fi-btn-color-primary {
+        background-image: linear-gradient(135deg, var(--repsol-orange), var(--repsol-red));
+        border-color: transparent;
+        color: white;
+    }
+
+    .fi-btn-color-primary:hover {
+        filter: brightness(1.05);
+    }
+
+    .fi-simple-main {
+        background: rgba(255, 255, 255, 0.88);
+        border: 1px solid rgba(255, 255, 255, 0.7);
+        box-shadow: 0 30px 80px -45px rgba(10, 26, 47, 0.45);
+    }
+
+    .dark .fi-simple-main {
+        background: rgba(10, 26, 47, 0.82);
+        border-color: rgba(63, 92, 121, 0.45);
+    }
+
+    .fi-simple-header-heading,
+    .fi-page h1 {
+        letter-spacing: -0.03em;
+    }
+}
