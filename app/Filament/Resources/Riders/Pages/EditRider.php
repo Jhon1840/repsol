@@ -38,7 +38,7 @@ class EditRider extends EditRecord
                         ->maxSize(20480)
                         ->required()
                         ->storeFiles(false)
-                        ->helperText('Se leerán los bloques del Excel por rider y se sumarán los litros de la columna D.'),
+                        ->helperText('Se leerán las filas del Excel usando sucursal en A, código de rider en B, nombre en C, nota de venta en D y litros en H.'),
                 ])
                 ->action(function (array $data): void {
                     try {

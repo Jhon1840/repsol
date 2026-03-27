@@ -20,12 +20,12 @@ class ExcelRiderImportServiceTest extends TestCase
     {
         $service = new ExcelRiderImportService();
         $path = $this->createExcelFile([
-            ['Nro Doc: sc00065', 'B', 'C', ''],
-            ['', 'x', 'y', '3.5'],
-            ['', 'x', 'y', 0],
-            ['Nro Doc: sc00081', 'x', 'y', ''],
-            ['', 'x', 'y', 'texto'],
-            ['', 'x', 'y', 4],
+            ['Sucursal', 'Codigo del Rider', 'Nombre del Rider', 'N de Nota de Venta', 'E', 'F', 'G', 'Litros'],
+            ['Central', 'sc00065', 'Sandra Parada', 'NV-001', '', '', '', '3.5'],
+            ['Central', 'sc00065', 'Sandra Parada', 'NV-002', '', '', '', 0],
+            ['Norte', 'sc00065', 'Sandra Parada', 'NV-003', '', '', '', 2],
+            ['Sur', 'sc00081', 'Jorge Mamani', 'NV-004', '', '', '', 'texto'],
+            ['Sur', 'sc00081', 'Jorge Mamani', 'NV-005', '', '', '', 4],
         ]);
 
         $parsed = $service->extractImportData($path);
@@ -33,8 +33,11 @@ class ExcelRiderImportServiceTest extends TestCase
         $this->assertCount(2, $parsed['parsed_riders']);
         $this->assertSame('SC00065', $parsed['parsed_riders'][0]['rider_id']);
         $this->assertSame(5.5, $parsed['parsed_riders'][0]['liters_total']);
+        $this->assertSame('Sandra Parada', $parsed['parsed_riders'][0]['rider_name']);
+        $this->assertSame(['NV-001', 'NV-003'], $parsed['parsed_riders'][0]['sale_note_numbers']);
         $this->assertSame('SC00081', $parsed['parsed_riders'][1]['rider_id']);
         $this->assertSame(4.0, $parsed['parsed_riders'][1]['liters_total']);
+        $this->assertSame('Jorge Mamani', $parsed['parsed_riders'][1]['rider_name']);
         $this->assertCount(2, $parsed['skipped_items']);
     }
 
@@ -49,11 +52,10 @@ class ExcelRiderImportServiceTest extends TestCase
 
         $service = new ExcelRiderImportService();
         $uploadedFile = $this->uploadedExcel([
-            ['Nro Doc: SC00065', 'x', 'y', ''],
-            ['', 'x', 'y', 2],
-            ['', 'x', 'y', 3],
-            ['Nro Doc: SC00099', 'x', 'y', ''],
-            ['', 'x', 'y', 4],
+            ['Sucursal', 'Codigo del Rider', 'Nombre del Rider', 'N de Nota de Venta', 'E', 'F', 'G', 'Litros'],
+            ['Central', 'SC00065', 'Sandra Parada', 'NV-001', '', '', '', 2],
+            ['Central', 'SC00065', 'Sandra Parada', 'NV-002', '', '', '', 3],
+            ['Norte', 'SC00099', 'Nuevo Rider', 'NV-003', '', '', '', 4],
         ]);
 
         $document = $service->storeAndImport($uploadedFile, null, ['source' => 'test']);
@@ -64,7 +66,7 @@ class ExcelRiderImportServiceTest extends TestCase
 
         $this->assertDatabaseHas('riders', [
             'rider_id' => 'SC00099',
-            'name' => 'SC00099',
+            'name' => 'Nuevo Rider',
         ]);
 
         $existingRider = Rider::query()->where('rider_id', 'SC00065')->firstOrFail();
@@ -96,10 +98,9 @@ class ExcelRiderImportServiceTest extends TestCase
 
         $service = new ExcelRiderImportService();
         $uploadedFile = $this->uploadedExcel([
-            ['Nro Doc: SC00065', 'x', 'y', ''],
-            ['', 'x', 'y', 2],
-            ['Nro Doc: SC00081', 'x', 'y', ''],
-            ['', 'x', 'y', 3],
+            ['Sucursal', 'Codigo del Rider', 'Nombre del Rider', 'N de Nota de Venta', 'E', 'F', 'G', 'Litros'],
+            ['Central', 'SC00065', 'Sandra Parada', 'NV-001', '', '', '', 2],
+            ['Central', 'SC00081', 'Jorge Mamani', 'NV-002', '', '', '', 3],
         ]);
 
         $this->expectException(ValidationException::class);

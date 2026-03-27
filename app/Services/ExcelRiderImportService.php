@@ -74,7 +74,10 @@ class ExcelRiderImportService
                         'occurred_at' => $document->uploaded_at,
                         'metadata' => [
                             'source' => 'excel_auto_import',
+                            'branch' => $parsedRider['branch'],
                             'rider_code' => $rider->rider_id,
+                            'rider_name' => $parsedRider['rider_name'],
+                            'sale_note_numbers' => $parsedRider['sale_note_numbers'],
                             'liters_total' => $parsedRider['liters_total'],
                             'row_numbers' => $parsedRider['row_numbers'],
                         ],
@@ -84,9 +87,11 @@ class ExcelRiderImportService
                     $processedItems[] = [
                         'rider_id' => $rider->rider_id,
                         'movement_id' => $movement->getKey(),
+                        'branch' => $parsedRider['branch'],
                         'liters_total' => $parsedRider['liters_total'],
                         'points' => $movement->points,
                         'row_numbers' => $parsedRider['row_numbers'],
+                        'sale_note_numbers' => $parsedRider['sale_note_numbers'],
                     ];
 
                     if ($documentRiderId === null && count($parsed['parsed_riders']) === 1) {
@@ -139,7 +144,6 @@ class ExcelRiderImportService
 
     protected function parseRows(iterable $rows): array
     {
-        $currentRiderId = null;
         $parsedRiders = [];
         $skippedItems = [];
         $rowNumber = 0;
@@ -156,53 +160,63 @@ class ExcelRiderImportService
                 continue;
             }
 
-            $columnA = $this->stringValue($values[0] ?? null);
-            $riderId = $this->extractRiderIdFromColumnA($columnA);
-
-            if ($riderId !== null) {
-                $currentRiderId = $riderId;
-
-                if (! isset($parsedRiders[$currentRiderId])) {
-                    $parsedRiders[$currentRiderId] = [
-                        'rider_id' => $currentRiderId,
-                        'liters_total' => 0.0,
-                        'row_numbers' => [],
-                    ];
-                }
-
+            if ($this->isHeaderRow($values)) {
                 continue;
             }
 
-            if ($currentRiderId === null) {
+            $branch = $this->stringValue($values[0] ?? null);
+            $riderId = $this->normalizeRiderId($values[1] ?? null);
+            $riderName = $this->stringValue($values[2] ?? null);
+            $saleNoteNumber = $this->stringValue($values[3] ?? null);
+
+            if ($riderId === null) {
                 continue;
             }
 
-            $liters = $this->parsePositiveNumber($values[3] ?? null);
+            if (! isset($parsedRiders[$riderId])) {
+                $parsedRiders[$riderId] = [
+                    'branch' => $branch,
+                    'rider_id' => $riderId,
+                    'rider_name' => $riderName,
+                    'liters_total' => 0.0,
+                    'row_numbers' => [],
+                    'sale_note_numbers' => [],
+                ];
+            }
+
+            $liters = $this->parsePositiveNumber($values[7] ?? null);
 
             if ($liters === null) {
                 $skippedItems[] = [
                     'row_number' => $rowNumber,
-                    'rider_id' => $currentRiderId,
-                    'liters_raw' => $this->stringValue($values[3] ?? null),
-                    'reason' => 'La columna D no contiene un valor numerico positivo de litros.',
+                    'branch' => $branch,
+                    'rider_id' => $riderId,
+                    'sale_note_number' => $saleNoteNumber,
+                    'liters_raw' => $this->stringValue($values[7] ?? null),
+                    'reason' => 'La columna H no contiene un valor numerico positivo de litros.',
                 ];
 
                 continue;
             }
 
-            $parsedRiders[$currentRiderId]['liters_total'] += $liters;
-            $parsedRiders[$currentRiderId]['row_numbers'][] = $rowNumber;
+            $parsedRiders[$riderId]['liters_total'] += $liters;
+            $parsedRiders[$riderId]['row_numbers'][] = $rowNumber;
+
+            if ($saleNoteNumber !== null) {
+                $parsedRiders[$riderId]['sale_note_numbers'][] = $saleNoteNumber;
+            }
         }
 
         if ($parsedRiders === []) {
             throw ValidationException::withMessages([
-                'excel' => ['No se encontraron bloques con "Nro Doc" para procesar riders desde el Excel.'],
+                'excel' => ['No se encontraron filas válidas con código de rider para procesar desde el Excel.'],
             ]);
         }
 
         return [
             'parsed_riders' => array_values(array_map(function (array $rider): array {
                 $rider['liters_total'] = round($rider['liters_total'], 2);
+                $rider['sale_note_numbers'] = array_values(array_unique($rider['sale_note_numbers']));
 
                 return $rider;
             }, $parsedRiders)),
@@ -224,27 +238,15 @@ class ExcelRiderImportService
 
         return Rider::query()->updateOrCreate(
             ['rider_id' => $parsedRider['rider_id']],
-            ['name' => $parsedRider['rider_id']]
+            ['name' => $parsedRider['rider_name'] ?: $parsedRider['rider_id']]
         );
     }
 
-    protected function extractRiderIdFromColumnA(?string $value): ?string
+    protected function isHeaderRow(array $values): bool
     {
-        if ($value === null) {
-            return null;
-        }
-
-        $normalized = $this->normalizeHeaderValue($value);
-
-        if ($normalized === 'NRO DOC') {
-            return null;
-        }
-
-        if (preg_match('/NRO\s*DOC\s*:?\s*(.+)/i', $value, $matches) === 1) {
-            return $this->normalizeRiderId($matches[1]);
-        }
-
-        return null;
+        return $this->normalizeHeaderValue($values[0] ?? null) === 'SUCURSAL'
+            && $this->normalizeHeaderValue($values[1] ?? null) === 'CODIGO DEL RIDER'
+            && $this->normalizeHeaderValue($values[2] ?? null) === 'NOMBRE DEL RIDER';
     }
 
     protected function isRowEmpty(array $values): bool

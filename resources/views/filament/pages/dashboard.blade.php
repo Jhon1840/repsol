@@ -81,7 +81,7 @@
                 <div class="relative flex items-start justify-between">
                     <div>
                         <p class="text-xs font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500">Subir Excel</p>
-                        <p class="mt-2 text-sm leading-relaxed text-slate-500">Carga un Excel para agrupar riders y sumar litros desde la columna D.</p>
+                        <p class="mt-2 text-sm leading-relaxed text-slate-500">Carga un Excel para leer sucursal en A, rider en B, nombre en C, nota en D y sumar litros desde H.</p>
                     </div>
                     <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -196,7 +196,7 @@
                 </div>
 
                 <div class="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-5 text-sm text-slate-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">
-                    El sistema leerá la primera hoja del Excel, tomará la columna A como <strong>Nro Doc</strong> y sumará los litros de la columna D por rider.
+                    El sistema leerá la primera hoja del Excel, tomará la sucursal de <strong>A</strong>, el código del rider de <strong>B</strong>, el nombre de <strong>C</strong>, la nota de venta de <strong>D</strong> y sumará los litros de <strong>H</strong> por rider.
                 </div>
 
                 @error('pendingExcel')
