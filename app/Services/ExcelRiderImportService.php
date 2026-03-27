@@ -156,6 +156,10 @@ class ExcelRiderImportService
                 $values[] = $cell->getValue();
             }
 
+            if ($rowNumber === 1) {
+                continue;
+            }
+
             if ($this->isRowEmpty($values)) {
                 continue;
             }
