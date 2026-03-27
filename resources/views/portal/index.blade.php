@@ -38,10 +38,6 @@
                 </div>
             </form>
 
-            <div class="rider-admin-link">
-                <a href="{{ route('portal.discount.form') }}">Ir a descuento de puntos</a>
-            </div>
-
         </article>
     </section>
 </x-portal.layout>
