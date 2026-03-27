@@ -13,7 +13,7 @@ class RiderForm
         return $schema
             ->components([
                 Section::make('Datos del rider')
-                    ->description('Solo se administran el ID y el nombre del rider.')
+                    ->description('Administra el ID, nombre y saldo de puntos del rider.')
                     ->schema([
                         TextInput::make('rider_id')
                             ->label('ID')
@@ -26,6 +26,14 @@ class RiderForm
                             ->required()
                             ->maxLength(255)
                             ->placeholder('SANDRA PARADA CABALLERO'),
+                        TextInput::make('points_balance')
+                            ->label('Puntos')
+                            ->numeric()
+                            ->integer()
+                            ->default(0)
+                            ->minValue(0)
+                            ->visible(fn (string $operation): bool => $operation === 'edit')
+                            ->helperText('Si cambias este valor, se registrará un ajuste automático de puntos.'),
                     ])
                     ->columns(2),
             ]);

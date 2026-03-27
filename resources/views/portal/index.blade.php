@@ -1,34 +1,47 @@
 <x-portal.layout title="Consulta de rider">
-    <section class="portal-hero">
-        <div class="portal-brand">
-            <p class="portal-kicker">REPSOL RIDERS</p>
-            <h1>Consulta tus puntos con un ingreso mínimo y directo.</h1>
-            <p>
-                Solo necesitas tu ID de rider para ver nombre, puntos acumulados y actividad reciente.
-            </p>
-        </div>
+    <section class="rider-entry">
+        <article class="rider-entry-card">
+            <header class="rider-entry-header">
+                <div class="rider-entry-logo">R</div>
+                <h1>Consulta de Puntos</h1>
+                <p>Ingresa tu ID para consultar tus puntos acumulados.</p>
+            </header>
 
-        <form action="{{ route('portal.search') }}" method="POST" class="portal-card">
-            @csrf
-            <label class="portal-label" for="rider_id">ID del rider</label>
-            <input
-                id="rider_id"
-                name="rider_id"
-                type="text"
-                class="portal-input"
-                value="{{ old('rider_id') }}"
-                placeholder="SC00065"
-                autocomplete="off"
-                required
-            >
+            <form action="{{ route('portal.search') }}" method="POST" class="rider-entry-form">
+                @csrf
 
-            @error('rider_id')
-                <p class="portal-error">{{ $message }}</p>
-            @enderror
+                <div class="rider-form-group">
+                    <label for="rider_id">ID de Rider</label>
+                    <input
+                        id="rider_id"
+                        name="rider_id"
+                        type="text"
+                        value="{{ old('rider_id') }}"
+                        placeholder="Ej: SC00065"
+                        autocomplete="off"
+                        required
+                    >
+                </div>
 
-            <button type="submit" class="portal-button">Consultar puntos</button>
+                @error('rider_id')
+                    <div class="rider-error-message">
+                        {{ $message }}
+                    </div>
+                @enderror
 
-            <p class="portal-note">Acceso administrativo en <a href="/admin">/admin</a>.</p>
-        </form>
+                <button type="submit" class="rider-submit-button">
+                    Consultar Puntos
+                </button>
+
+                <div class="rider-example-hint">
+                    <small>Ejemplos de IDs válidos: SC00065, SC00081, SC00102</small>
+                </div>
+            </form>
+
+            <div class="rider-admin-link">
+                <a href="{{ route('portal.discount.form') }}">Ir a descuento de puntos</a>
+            </div>
+
+        </article>
     </section>
 </x-portal.layout>

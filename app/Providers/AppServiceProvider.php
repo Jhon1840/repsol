@@ -25,10 +25,5 @@ class AppServiceProvider extends ServiceProvider
             PanelsRenderHook::HEAD_START,
             fn (): string => view('filament.partials.theme-script')->render(),
         );
-
-        FilamentView::registerRenderHook(
-            PanelsRenderHook::BODY_END,
-            fn (): string => view('filament.partials.theme-toggle')->render(),
-        );
     }
 }

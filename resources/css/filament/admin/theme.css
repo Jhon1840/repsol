@@ -59,8 +59,6 @@
 
     .fi-simple-main,
     .fi-ta-ctn,
-    .fi-sidebar,
-    .fi-topbar,
     .fi-page-header-main-ctn,
     .fi-modal-window {
         border-radius: 1.5rem;
@@ -69,10 +67,27 @@
     .fi-sidebar {
         background: linear-gradient(180deg, rgba(10, 26, 47, 0.94), rgba(24, 40, 64, 0.88));
         color: white;
+        border-radius: 0 !important;
+    }
+
+    .fi-main-sidebar,
+    .fi-sidebar.fi-main-sidebar,
+    .fi-sidebar.fi-main-sidebar.fi-sidebar-open {
+        border-radius: 0 !important;
+    }
+
+    .fi-sidebar-header-ctn,
+    .fi-sidebar-header {
+        border-radius: 0 !important;
+    }
+
+    .fi-body-has-topbar .fi-sidebar-header {
+        border-radius: 0 !important;
     }
 
     .fi-topbar {
         background: rgba(255, 255, 255, 0.72);
+        border-radius: 0 !important;
     }
 
     .dark .fi-topbar {

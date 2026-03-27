@@ -1,75 +1,84 @@
 <x-portal.layout :title="'Rider ' . $rider->rider_id">
-    <section class="portal-results">
-        <div class="portal-results-header">
-            <div>
-                <p class="portal-kicker">RESULTADO</p>
-                <h1>{{ $rider->name }}</h1>
-                <p class="portal-muted">ID {{ $rider->rider_id }}</p>
-            </div>
+    <section class="rider-result">
+        <article class="rider-result-card">
+            <header class="rider-result-header">
+                <div class="rider-result-icon">✓</div>
+                <h1>Hola, {{ $rider->name }}</h1>
+                <p>ID {{ $rider->rider_id }}</p>
+            </header>
 
-            <a href="{{ route('portal.index') }}" class="portal-secondary-button">Nueva consulta</a>
-        </div>
+            <section class="rider-points-display">
+                <div class="rider-points-label">Tus puntos acumulados</div>
+                <div class="rider-points-value">{{ number_format((int) $rider->points_balance) }}</div>
+                <div class="rider-points-unit">puntos</div>
+            </section>
 
-        <div class="portal-metrics">
-            <article class="portal-metric-card">
-                <span>Puntos acumulados</span>
-                <strong>{{ number_format((int) $rider->points_balance) }}</strong>
-            </article>
+            <section class="rider-info-section">
+                <h2>Resumen de actividad</h2>
 
-            <article class="portal-metric-card">
-                <span>Actividad reciente</span>
-                <strong>{{ $rider->movements->count() }}</strong>
-            </article>
-        </div>
+                <div class="rider-info-stats">
+                    <article class="rider-stat-item">
+                        <span class="rider-stat-number">{{ $rider->movements->count() }}</span>
+                        <span class="rider-stat-label">Movimientos</span>
+                    </article>
 
-        <div class="portal-panels">
-            <article class="portal-card">
-                <h2>Historial reciente</h2>
-
-                <div class="portal-table-wrap">
-                    <table class="portal-table">
-                        <thead>
-                            <tr>
-                                <th>Fecha</th>
-                                <th>Referencia</th>
-                                <th>Detalle</th>
-                                <th>Puntos</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @forelse ($rider->movements as $movement)
-                                <tr>
-                                    <td>{{ optional($movement->occurred_at)->format('d/m/Y') ?? '-' }}</td>
-                                    <td>{{ $movement->reference ?? '-' }}</td>
-                                    <td>{{ $movement->description ?? ucfirst($movement->movement_type) }}</td>
-                                    <td>{{ number_format($movement->points) }}</td>
-                                </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="4">No hay actividad reciente para este rider.</td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
+                    <article class="rider-stat-item">
+                        <span class="rider-stat-number">{{ number_format((int) $rider->points_balance) }}</span>
+                        <span class="rider-stat-label">Puntos</span>
+                    </article>
                 </div>
-            </article>
+            </section>
 
-            <article class="portal-card">
-                <h2>Documentos relacionados</h2>
+            <section class="rider-activity">
+                <h2>Últimos movimientos</h2>
 
-                <div class="portal-doc-list">
-                    @forelse ($rider->documents as $document)
-                        <div class="portal-doc-item">
-                            <strong>{{ $document->original_name }}</strong>
-                            <span>{{ str_replace('_', ' ', $document->status) }}</span>
-                        </div>
+                <div class="rider-activity-list">
+                    @forelse ($rider->movements->take(3) as $movement)
+                        <article class="rider-activity-item">
+                            <div class="rider-activity-icon">+</div>
+
+                            <div class="rider-activity-info">
+                                <div class="rider-activity-description">
+                                    {{ $movement->description ?? ucfirst($movement->movement_type) }}
+                                </div>
+
+                                <div class="rider-activity-date">
+                                    {{ optional($movement->occurred_at)->format('d/m/Y') ?? 'Sin fecha' }}
+                                </div>
+                            </div>
+
+                            <div class="rider-activity-points">
+                                +{{ number_format($movement->points) }}
+                            </div>
+                        </article>
                     @empty
-                        <div class="portal-empty">
-                            No existen PDFs relacionados para este rider por ahora.
+                        <div class="rider-empty-state">
+                            No hay movimientos recientes para este rider.
                         </div>
                     @endforelse
                 </div>
-            </article>
-        </div>
+            </section>
+
+            <a href="{{ route('portal.index') }}" class="rider-back-button">
+                Nueva consulta
+            </a>
+
+            <footer class="rider-info-footer">
+                <div class="rider-info-row">
+                    <span class="rider-info-label">ID</span>
+                    <span class="rider-info-value">{{ $rider->rider_id }}</span>
+                </div>
+
+                <div class="rider-info-row">
+                    <span class="rider-info-label">Nombre</span>
+                    <span class="rider-info-value">{{ $rider->name }}</span>
+                </div>
+
+                <div class="rider-info-row">
+                    <span class="rider-info-label">Puntos</span>
+                    <span class="rider-info-value">{{ number_format((int) $rider->points_balance) }}</span>
+                </div>
+            </footer>
+        </article>
     </section>
 </x-portal.layout>

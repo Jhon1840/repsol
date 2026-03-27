@@ -9,6 +9,7 @@ class RiderMovement extends Model
 {
     protected $fillable = [
         'rider_id',
+        'product_id',
         'uploaded_document_id',
         'movement_type',
         'reference',
@@ -31,6 +32,11 @@ class RiderMovement extends Model
     public function rider(): BelongsTo
     {
         return $this->belongsTo(Rider::class);
+    }
+
+    public function product(): BelongsTo
+    {
+        return $this->belongsTo(Product::class);
     }
 
     public function document(): BelongsTo

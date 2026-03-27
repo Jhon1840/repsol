@@ -2,84 +2,124 @@
     <div
         x-data="{
             open: false,
-            previewUrl: null,
             fileName: '',
             selectFile(event) {
                 const [file] = event.target.files || [];
                 if (!file) return;
-                if (this.previewUrl) URL.revokeObjectURL(this.previewUrl);
-                this.previewUrl = URL.createObjectURL(file);
                 this.fileName = file.name;
                 this.open = true;
             },
             clearSelection() {
-                if (this.previewUrl) URL.revokeObjectURL(this.previewUrl);
-                this.previewUrl = null;
                 this.fileName = '';
                 this.open = false;
-                const input = document.getElementById('dashboard-pdf-input');
+                const input = document.getElementById('dashboard-excel-input');
                 if (input) input.value = '';
             },
         }"
-        x-on:pdf-uploaded.window="clearSelection()"
-        x-on:pdf-selection-cancelled.window="clearSelection()"
+        x-on:excel-uploaded.window="clearSelection()"
+        x-on:excel-selection-cancelled.window="clearSelection()"
         class="space-y-6"
     >
-        <section class="grid gap-4 xl:grid-cols-[1.5fr_1fr_1fr]">
-            <article class="overflow-hidden rounded-[2rem] border border-slate-200/70 bg-white/95 p-6 shadow-sm dark:border-slate-800 dark:bg-slate-950/90">
-                <p class="text-xs font-semibold uppercase tracking-[0.28em] text-slate-500">Control central</p>
-                <h2 class="mt-3 max-w-xl text-2xl font-semibold tracking-tight text-slate-950 dark:text-white">
-                    Gestiona riders, puntos acumulados y PDFs globales sin salir del dashboard.
-                </h2>
-                <p class="mt-3 max-w-2xl text-sm leading-6 text-slate-500">
-                    La carga de PDFs queda lista para futura automatización, pero hoy solo registra el archivo y conserva el flujo visual de previsualización.
-                </p>
+        {{-- ── Stat Cards ── --}}
+        <section class="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
 
-                <div class="mt-6 flex flex-wrap gap-3">
+            {{-- Card: Riders --}}
+            <article class="group relative overflow-hidden rounded-2xl border border-slate-200/60 bg-white p-5 shadow-sm transition hover:shadow-md dark:border-slate-800 dark:bg-slate-900">
+                <div class="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-gradient-to-br from-[#E6932A]/10 to-[#C12A3A]/10 blur-2xl transition group-hover:scale-125"></div>
+                <div class="relative flex items-start justify-between">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500">Riders</p>
+                        <p class="mt-3 text-4xl font-bold tracking-tight text-slate-900 dark:text-white">{{ number_format($totalRiders) }}</p>
+                        <p class="mt-1.5 text-sm text-slate-500">Registrados en el sistema</p>
+                    </div>
+                    <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#E6932A] to-[#C12A3A] text-white shadow-lg shadow-orange-200/50 dark:shadow-orange-900/30">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+                            <circle cx="9" cy="7" r="4"/>
+                            <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                        </svg>
+                    </span>
+                </div>
+                <div class="mt-4">
+                    <a
+                        href="{{ \App\Filament\Resources\Riders\RiderResource::getUrl('index') }}"
+                        class="inline-flex items-center gap-1 text-xs font-semibold text-[#E6932A] transition hover:text-[#C12A3A] dark:text-[#F0D98A] dark:hover:text-[#E6932A]"
+                    >
+                        Ver todos
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                    </a>
+                </div>
+            </article>
+
+            {{-- Card: Puntos Totales --}}
+            <article class="group relative overflow-hidden rounded-2xl border border-slate-200/60 bg-white p-5 shadow-sm transition hover:shadow-md dark:border-slate-800 dark:bg-slate-900">
+                <div class="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-gradient-to-br from-[#C12A3A]/10 to-[#E6932A]/10 blur-2xl transition group-hover:scale-125"></div>
+                <div class="relative flex items-start justify-between">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500">Puntos Totales</p>
+                        <p class="mt-3 text-4xl font-bold tracking-tight text-[#C12A3A] dark:text-[#F0D98A]">{{ number_format($totalPoints) }}</p>
+                        <p class="mt-1.5 text-sm text-slate-500">Acumulados por todos los riders</p>
+                    </div>
+                    <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#C12A3A] to-[#E6932A] text-white shadow-lg shadow-red-200/50 dark:shadow-red-900/30">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.56 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z"/>
+                        </svg>
+                    </span>
+                </div>
+                <div class="mt-4">
+                    <span class="inline-flex items-center gap-1.5 rounded-full bg-green-50 px-2.5 py-1 text-xs font-semibold text-green-700 dark:bg-green-900/30 dark:text-green-400">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"/></svg>
+                        Activo
+                    </span>
+                </div>
+            </article>
+
+            {{-- Card: Subir Excel --}}
+            <article class="group relative overflow-hidden rounded-2xl border border-slate-200/60 bg-white p-5 shadow-sm transition hover:shadow-md dark:border-slate-800 dark:bg-slate-900">
+                <div class="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-gradient-to-br from-slate-200/40 to-slate-300/30 blur-2xl transition group-hover:scale-125 dark:from-slate-700/20 dark:to-slate-600/10"></div>
+                <div class="relative flex items-start justify-between">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500">Subir Excel</p>
+                        <p class="mt-2 text-sm leading-relaxed text-slate-500">Carga un Excel para agrupar riders y sumar litros desde la columna D.</p>
+                    </div>
+                    <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/>
+                            <path d="M14 2v6h6"/>
+                            <path d="M12 18v-6"/>
+                            <path d="m9 15 3-3 3 3"/>
+                        </svg>
+                    </span>
+                </div>
+                <div class="mt-5">
                     <button
                         type="button"
-                        onclick="document.getElementById('dashboard-pdf-input').click()"
-                        class="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-[#E6932A] to-[#C12A3A] px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-orange-200 transition hover:-translate-y-0.5 dark:shadow-orange-950/40"
+                        onclick="document.getElementById('dashboard-excel-input').click()"
+                        class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#E6932A] to-[#C12A3A] px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-orange-200/50 transition hover:-translate-y-0.5 hover:shadow-lg dark:shadow-orange-900/30"
                     >
-                        Subir PDF
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                        Seleccionar archivo
                     </button>
-
-                    <a
-                        href="{{ \App\Filament\Resources\Riders\RiderResource::getUrl('create') }}"
-                        class="inline-flex items-center justify-center rounded-full border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700 transition hover:border-slate-400 hover:text-slate-950 dark:border-slate-700 dark:text-slate-200 dark:hover:border-slate-500 dark:hover:text-white"
-                    >
-                        Crear rider
-                    </a>
                 </div>
 
                 <input
-                    id="dashboard-pdf-input"
+                    id="dashboard-excel-input"
                     type="file"
-                    accept="application/pdf"
-                    wire:model="pendingPdf"
+                    accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                    wire:model="pendingExcel"
                     x-on:change="selectFile($event)"
                     class="hidden"
                 />
             </article>
 
-            <article class="rounded-[2rem] border border-slate-200/70 bg-white/95 p-6 shadow-sm dark:border-slate-800 dark:bg-slate-950/90">
-                <p class="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Riders registrados</p>
-                <p class="mt-4 text-4xl font-semibold text-slate-950 dark:text-white">{{ number_format($totalRiders) }}</p>
-                <p class="mt-2 text-sm text-slate-500">Total activo en la base administrativa.</p>
-            </article>
-
-            <article class="rounded-[2rem] border border-slate-200/70 bg-white/95 p-6 shadow-sm dark:border-slate-800 dark:bg-slate-950/90">
-                <p class="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Puntos acumulados</p>
-                <p class="mt-4 text-4xl font-semibold text-[#C12A3A] dark:text-[#F0D98A]">{{ number_format($totalPoints) }}</p>
-                <p class="mt-2 text-sm text-slate-500">Suma calculada desde el historial de movimientos.</p>
-            </article>
         </section>
 
         <section class="grid gap-6 xl:grid-cols-[1.6fr_1fr]">
             <article class="rounded-[2rem] border border-slate-200/70 bg-white/95 p-6 shadow-sm dark:border-slate-800 dark:bg-slate-950/90">
                 <div class="mb-5">
                     <h3 class="text-lg font-semibold text-slate-950 dark:text-white">Riders registrados</h3>
-                    <p class="text-sm text-slate-500">Tabla responsive con acceso directo a detalle y edición completa.</p>
+                    <p class="text-sm text-slate-500">Ultimos riders con puntos acumulados.</p>
                 </div>
 
                 <div class="overflow-x-auto">
@@ -124,8 +164,8 @@
             </article>
 
             <article class="rounded-[2rem] border border-slate-200/70 bg-white/95 p-6 shadow-sm dark:border-slate-800 dark:bg-slate-950/90">
-                <h3 class="text-lg font-semibold text-slate-950 dark:text-white">PDFs recientes</h3>
-                <p class="mt-1 text-sm text-slate-500">Cargas registradas visualmente desde el dashboard.</p>
+                <h3 class="text-lg font-semibold text-slate-950 dark:text-white">Archivos recientes</h3>
+                <p class="mt-1 text-sm text-slate-500">Importaciones registradas desde el dashboard.</p>
 
                 <div class="mt-5 space-y-3">
                     @forelse ($recentDocuments as $document)
@@ -136,7 +176,7 @@
                         </div>
                     @empty
                         <div class="rounded-2xl border border-dashed border-slate-300 px-4 py-8 text-center text-sm text-slate-500 dark:border-slate-700">
-                            Todavía no hay PDFs cargados.
+                            Todavía no hay archivos cargados.
                         </div>
                     @endforelse
                 </div>
@@ -147,27 +187,27 @@
             <div class="w-full max-w-4xl rounded-[2rem] border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-800 dark:bg-slate-950">
                 <div class="flex items-start justify-between gap-4">
                     <div>
-                        <p class="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Vista previa PDF</p>
-                        <h3 class="mt-2 text-xl font-semibold text-slate-950 dark:text-white" x-text="fileName || 'Documento seleccionado'"></h3>
+                        <p class="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Confirmar Excel</p>
+                        <h3 class="mt-2 text-xl font-semibold text-slate-950 dark:text-white" x-text="fileName || 'Archivo seleccionado'"></h3>
                     </div>
-                    <button type="button" x-on:click="clearSelection(); $wire.cancelPdfSelection()" class="rounded-full border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:border-slate-700 dark:text-slate-200">
+                    <button type="button" x-on:click="clearSelection(); $wire.cancelExcelSelection()" class="rounded-full border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:border-slate-700 dark:text-slate-200">
                         Cerrar
                     </button>
                 </div>
 
-                <div class="mt-5 overflow-hidden rounded-2xl border border-slate-200 bg-slate-100 dark:border-slate-800 dark:bg-slate-900">
-                    <iframe x-bind:src="previewUrl" class="h-[60vh] w-full" title="Vista previa del PDF"></iframe>
+                <div class="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-5 text-sm text-slate-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">
+                    El sistema leerá la primera hoja del Excel, tomará la columna A como <strong>Nro Doc</strong> y sumará los litros de la columna D por rider.
                 </div>
 
-                @error('pendingPdf')
+                @error('pendingExcel')
                     <p class="mt-3 text-sm font-medium text-red-600">{{ $message }}</p>
                 @enderror
 
                 <div class="mt-5 flex justify-end gap-3">
-                    <button type="button" x-on:click="clearSelection(); $wire.cancelPdfSelection()" class="rounded-full border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700 dark:border-slate-700 dark:text-slate-200">
+                    <button type="button" x-on:click="clearSelection(); $wire.cancelExcelSelection()" class="rounded-full border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700 dark:border-slate-700 dark:text-slate-200">
                         Cancelar
                     </button>
-                    <button type="button" wire:click="storePdf" class="rounded-full bg-gradient-to-r from-[#E6932A] to-[#C12A3A] px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-orange-200 dark:shadow-orange-950/40">
+                    <button type="button" wire:click="storeExcel" class="rounded-full bg-gradient-to-r from-[#E6932A] to-[#C12A3A] px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-orange-200 dark:shadow-orange-950/40">
                         Continuar
                     </button>
                 </div>

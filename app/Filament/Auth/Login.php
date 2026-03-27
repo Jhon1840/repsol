@@ -22,7 +22,7 @@ class Login extends BaseLogin
 
     public function getSubheading(): string | Htmlable | null
     {
-        return new HtmlString('Panel interno en Laravel 12 + Filament 4 para control de riders, puntos y documentos PDF.');
+        return new HtmlString('Panel interno para gestionar los riders y sus puntos acumulados. <br>Utiliza el correo administrativo para iniciar sesión.');
     }
 
     protected function getEmailFormComponent(): Component

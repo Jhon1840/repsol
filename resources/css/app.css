@@ -38,9 +38,9 @@
     .portal-shell {
         min-height: 100vh;
         background:
-            radial-gradient(circle at top left, rgba(230, 147, 42, 0.22), transparent 28%),
+            radial-gradient(circle at top left, rgba(230, 147, 42, 0.22), transparent 24%),
             radial-gradient(circle at top right, rgba(193, 42, 58, 0.18), transparent 24%),
-            linear-gradient(180deg, #f7f9fc 0%, #edf3f8 100%);
+            linear-gradient(160deg, #eef4fb 0%, #f8fafc 45%, #edf3f8 100%);
     }
 
     .dark .portal-shell {
@@ -51,9 +51,9 @@
     }
 
     .portal-main {
-        width: min(1160px, calc(100% - 2rem));
+        width: min(100%, calc(100% - 2rem));
         margin: 0 auto;
-        padding: 2rem 0 4rem;
+        padding: 1.5rem 0 4rem;
     }
 
     .theme-toggle {
@@ -217,6 +217,11 @@
         align-items: center;
     }
 
+    .portal-results-actions {
+        display: flex;
+        justify-content: flex-end;
+    }
+
     .portal-metrics {
         grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
     }
@@ -298,5 +303,520 @@
         letter-spacing: 0.14em;
         text-transform: uppercase;
         color: var(--repsol-steel);
+    }
+
+    .rider-entry,
+    .rider-result {
+        min-height: calc(100vh - 3rem);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .rider-entry-card,
+    .rider-result-card,
+    .not-found-card {
+        width: 100%;
+        max-width: 30rem;
+        border-radius: 1.75rem;
+        background: rgba(255, 255, 255, 0.96);
+        border: 1px solid rgba(255, 255, 255, 0.72);
+        box-shadow: 0 28px 70px -32px rgba(10, 26, 47, 0.34);
+        padding: 2rem 1.5rem;
+        backdrop-filter: blur(18px);
+    }
+
+    .dark .rider-entry-card,
+    .dark .rider-result-card,
+    .dark .not-found-card {
+        background: rgba(10, 26, 47, 0.88);
+        border-color: rgba(63, 92, 121, 0.42);
+    }
+
+    .rider-entry-header,
+    .rider-result-header {
+        text-align: center;
+        margin-bottom: 1.75rem;
+    }
+
+    .rider-entry-logo,
+    .rider-result-icon {
+        width: 4.75rem;
+        height: 4.75rem;
+        margin: 0 auto 1rem;
+        border-radius: 9999px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, var(--repsol-orange) 0%, var(--repsol-red) 100%);
+        color: white;
+        font-size: 2rem;
+        font-weight: 800;
+        box-shadow: 0 12px 28px -14px rgba(193, 42, 58, 0.7);
+    }
+
+    .rider-entry-header h1,
+    .rider-result-header h1 {
+        margin: 0;
+        font-size: clamp(1.9rem, 7vw, 2.25rem);
+        font-weight: 800;
+        line-height: 1.05;
+        letter-spacing: -0.04em;
+    }
+
+    .rider-entry-header p,
+    .rider-result-header p {
+        margin: 0.75rem 0 0;
+        font-size: 0.96rem;
+        line-height: 1.5;
+        color: color-mix(in srgb, var(--repsol-steel) 78%, white);
+    }
+
+    .dark .rider-entry-header p,
+    .dark .rider-result-header p {
+        color: #cbd5e1;
+    }
+
+    .rider-entry-form {
+        display: grid;
+        gap: 1.1rem;
+    }
+
+    .rider-form-group {
+        display: grid;
+        gap: 0.65rem;
+    }
+
+    .rider-form-group label {
+        font-size: 0.9rem;
+        font-weight: 700;
+        color: var(--repsol-night);
+    }
+
+    .dark .rider-form-group label {
+        color: white;
+    }
+
+    .rider-form-group input {
+        width: 100%;
+        border-radius: 1rem;
+        border: 2px solid rgba(63, 92, 121, 0.14);
+        background: white;
+        padding: 1rem 1.1rem;
+        font-size: 1.05rem;
+        font-weight: 700;
+        text-align: center;
+        text-transform: uppercase;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+    }
+
+    .rider-form-group input:focus {
+        outline: none;
+        border-color: var(--repsol-orange);
+        box-shadow: 0 0 0 4px rgba(230, 147, 42, 0.14);
+    }
+
+    .dark .rider-form-group input {
+        background: rgba(15, 23, 42, 0.58);
+        border-color: rgba(148, 163, 184, 0.18);
+        color: white;
+    }
+
+    .rider-error-message {
+        border-radius: 0.9rem;
+        border: 1px solid rgba(193, 42, 58, 0.18);
+        background: rgba(193, 42, 58, 0.08);
+        padding: 0.9rem 1rem;
+        color: var(--repsol-red);
+        font-size: 0.9rem;
+        font-weight: 700;
+        text-align: center;
+    }
+
+    .rider-success-message {
+        border-radius: 0.9rem;
+        border: 1px solid rgba(34, 197, 94, 0.2);
+        background: rgba(34, 197, 94, 0.1);
+        padding: 0.9rem 1rem;
+        color: #166534;
+        font-size: 0.9rem;
+        font-weight: 700;
+        text-align: center;
+    }
+
+    .dark .rider-success-message {
+        color: #bbf7d0;
+        background: rgba(34, 197, 94, 0.14);
+        border-color: rgba(134, 239, 172, 0.18);
+    }
+
+    .rider-submit-button,
+    .rider-back-button {
+        display: inline-flex;
+        width: 100%;
+        align-items: center;
+        justify-content: center;
+        border: none;
+        border-radius: 1rem;
+        padding: 1rem 1.25rem;
+        text-decoration: none;
+        cursor: pointer;
+        background: linear-gradient(135deg, var(--repsol-orange) 0%, var(--repsol-red) 100%);
+        color: white;
+        font-size: 1rem;
+        font-weight: 800;
+        box-shadow: 0 14px 30px -18px rgba(193, 42, 58, 0.85);
+        transition: transform 0.25s ease, box-shadow 0.25s ease;
+    }
+
+    .rider-submit-button:hover,
+    .rider-back-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 18px 36px -18px rgba(193, 42, 58, 0.9);
+    }
+
+    .rider-example-hint {
+        text-align: center;
+        color: #6b7280;
+        font-size: 0.82rem;
+    }
+
+    .dark .rider-example-hint {
+        color: #94a3b8;
+    }
+
+    .rider-admin-link {
+        margin-top: 1.5rem;
+        padding-top: 1.25rem;
+        border-top: 1px solid rgba(148, 163, 184, 0.18);
+        text-align: center;
+    }
+
+    .rider-admin-link a {
+        color: var(--repsol-red);
+        text-decoration: none;
+        font-weight: 700;
+    }
+
+    .rider-points-display {
+        text-align: center;
+        padding: 1.5rem 1.2rem;
+        border-radius: 1.4rem;
+        margin-bottom: 1.5rem;
+        background:
+            radial-gradient(circle at top right, rgba(255, 255, 255, 0.45), transparent 28%),
+            linear-gradient(135deg, rgba(230, 147, 42, 0.14), rgba(193, 42, 58, 0.1));
+        border: 1px solid rgba(230, 147, 42, 0.18);
+    }
+
+    .dark .rider-points-display {
+        background:
+            radial-gradient(circle at top right, rgba(255, 255, 255, 0.08), transparent 28%),
+            linear-gradient(135deg, rgba(230, 147, 42, 0.16), rgba(193, 42, 58, 0.14));
+        border-color: rgba(230, 147, 42, 0.18);
+    }
+
+    .rider-points-label {
+        font-size: 0.78rem;
+        font-weight: 800;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--repsol-steel);
+    }
+
+    .rider-points-value {
+        margin-top: 0.5rem;
+        font-size: clamp(3.4rem, 15vw, 4.6rem);
+        line-height: 0.92;
+        font-weight: 900;
+        letter-spacing: -0.08em;
+        color: var(--repsol-red);
+    }
+
+    .rider-points-unit {
+        margin-top: 0.25rem;
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: var(--repsol-steel);
+    }
+
+    .rider-info-section,
+    .rider-activity {
+        margin-bottom: 1.4rem;
+    }
+
+    .rider-info-section h2,
+    .rider-activity h2 {
+        margin: 0 0 0.9rem;
+        font-size: 1rem;
+        font-weight: 800;
+    }
+
+    .rider-info-stats {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.85rem;
+    }
+
+    .rider-stat-item {
+        display: grid;
+        gap: 0.3rem;
+        text-align: center;
+        border-radius: 1rem;
+        background: rgba(255, 255, 255, 0.58);
+        border: 1px solid rgba(148, 163, 184, 0.16);
+        padding: 1rem 0.75rem;
+    }
+
+    .dark .rider-stat-item {
+        background: rgba(15, 23, 42, 0.45);
+    }
+
+    .rider-stat-number {
+        font-size: 1.75rem;
+        font-weight: 900;
+        color: var(--repsol-red);
+    }
+
+    .rider-stat-label {
+        font-size: 0.8rem;
+        font-weight: 700;
+        color: var(--repsol-steel);
+    }
+
+    .rider-activity-list {
+        display: grid;
+        gap: 0.75rem;
+    }
+
+    .rider-activity-item {
+        display: flex;
+        align-items: center;
+        gap: 0.8rem;
+        border-radius: 1rem;
+        background: rgba(255, 255, 255, 0.58);
+        border: 1px solid rgba(148, 163, 184, 0.16);
+        padding: 0.85rem;
+    }
+
+    .dark .rider-activity-item {
+        background: rgba(15, 23, 42, 0.45);
+    }
+
+    .rider-activity-icon {
+        width: 2.5rem;
+        height: 2.5rem;
+        flex-shrink: 0;
+        border-radius: 0.85rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, var(--repsol-orange), var(--repsol-red));
+        color: white;
+        font-size: 1rem;
+        font-weight: 900;
+    }
+
+    .rider-activity-info {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .rider-activity-description {
+        font-size: 0.92rem;
+        font-weight: 700;
+        line-height: 1.35;
+    }
+
+    .rider-activity-date {
+        margin-top: 0.18rem;
+        font-size: 0.78rem;
+        color: #6b7280;
+    }
+
+    .dark .rider-activity-date {
+        color: #94a3b8;
+    }
+
+    .rider-activity-points {
+        font-size: 1rem;
+        font-weight: 900;
+        color: var(--repsol-red);
+    }
+
+    .rider-empty-state {
+        border-radius: 1rem;
+        border: 1px dashed rgba(148, 163, 184, 0.24);
+        padding: 1rem;
+        text-align: center;
+        color: #6b7280;
+        font-size: 0.9rem;
+    }
+
+    .dark .rider-empty-state {
+        color: #94a3b8;
+    }
+
+    .rider-info-footer {
+        margin-top: 1.4rem;
+        padding-top: 1rem;
+        border-top: 1px solid rgba(148, 163, 184, 0.18);
+        display: grid;
+        gap: 0.7rem;
+    }
+
+    .rider-info-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 1rem;
+        font-size: 0.86rem;
+    }
+
+    .rider-info-label {
+        color: #6b7280;
+        font-weight: 700;
+    }
+
+    .dark .rider-info-label {
+        color: #94a3b8;
+    }
+
+    .rider-info-value {
+        font-weight: 800;
+        text-align: right;
+    }
+
+    @media (max-width: 768px) {
+        .portal-main {
+            width: min(100% - 0.5rem, 100%);
+            padding: 0.85rem 0 5rem;
+        }
+
+        .portal-hero {
+            min-height: auto;
+            grid-template-columns: 1fr;
+        }
+
+        .portal-brand,
+        .portal-card,
+        .portal-metric-card {
+            border-radius: 1.5rem;
+        }
+
+        .portal-brand,
+        .portal-card {
+            padding: 1.25rem;
+        }
+
+        .portal-results-header {
+            grid-template-columns: 1fr;
+            align-items: start;
+        }
+
+        .portal-results-actions {
+            justify-content: stretch;
+        }
+
+        .portal-results-actions .portal-secondary-button {
+            width: 100%;
+        }
+
+        .portal-metrics,
+        .portal-panels {
+            grid-template-columns: 1fr;
+        }
+
+        .portal-metric-card {
+            padding: 1.1rem 1.15rem;
+        }
+
+        .portal-metric-card strong {
+            font-size: 2.1rem;
+        }
+
+        .portal-table {
+            min-width: 0;
+        }
+
+        .portal-table thead {
+            display: none;
+        }
+
+        .portal-table,
+        .portal-table tbody,
+        .portal-table tr,
+        .portal-table td {
+            display: block;
+            width: 100%;
+        }
+
+        .portal-table tr {
+            padding: 0.9rem 0;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+        }
+
+        .portal-table td {
+            padding: 0.35rem 0;
+            border-bottom: none;
+            text-align: left !important;
+        }
+
+        .portal-table td::before {
+            content: attr(data-label);
+            display: block;
+            margin-bottom: 0.2rem;
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--repsol-steel);
+        }
+
+        .portal-table td[colspan] {
+            padding: 0;
+        }
+
+        .portal-table td[colspan]::before {
+            display: none;
+        }
+
+        .portal-doc-item,
+        .portal-empty {
+            border-radius: 1rem;
+            padding: 0.9rem;
+        }
+
+        .rider-entry,
+        .rider-result {
+            min-height: auto;
+            align-items: stretch;
+        }
+
+        .rider-entry-card,
+        .rider-result-card,
+        .not-found-card {
+            max-width: 100%;
+            padding: 1.6rem 1.2rem;
+            border-radius: 1.5rem;
+        }
+
+        .rider-entry-logo,
+        .rider-result-icon {
+            width: 4.1rem;
+            height: 4.1rem;
+            font-size: 1.7rem;
+            margin-bottom: 0.85rem;
+        }
+
+        .rider-info-stats {
+            grid-template-columns: 1fr;
+        }
+
+        .theme-toggle {
+            right: 0.85rem;
+            bottom: 0.85rem;
+            width: 2.75rem;
+            height: 2.75rem;
+        }
     }
 }
