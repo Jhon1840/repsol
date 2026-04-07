@@ -19,6 +19,7 @@ class DatabaseSeeder extends Seeder
             ['email' => 'admin@repsol-filament.test'],
             [
                 'name' => 'Administrador Repsol',
+                'role' => User::ROLE_ADMIN,
                 'password' => 'password',
             ],
         );

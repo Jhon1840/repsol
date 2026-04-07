@@ -15,7 +15,22 @@ services:
     command: >
       sh -lc "if [ ! -f vendor/autoload.php ]; then composer install --no-interaction --prefer-dist; fi; php-fpm"
     volumes:
-      - ./:/var/www/html:cached
+      - ./app:/var/www/html/app:cached
+      - ./bootstrap:/var/www/html/bootstrap:cached
+      - ./config:/var/www/html/config:cached
+      - ./database:/var/www/html/database:cached
+      - ./public:/var/www/html/public:cached
+      - ./resources:/var/www/html/resources:cached
+      - ./routes:/var/www/html/routes:cached
+      - ./storage:/var/www/html/storage:cached
+      - ./tests:/var/www/html/tests:cached
+      - ./artisan:/var/www/html/artisan:cached
+      - ./composer.json:/var/www/html/composer.json:cached
+      - ./composer.lock:/var/www/html/composer.lock:cached
+      - ./.env:/var/www/html/.env:cached
+      - ./.env.example:/var/www/html/.env.example:cached
+      - ./phpunit.xml:/var/www/html/phpunit.xml:cached
+      - ./vite.config.js:/var/www/html/vite.config.js:cached
       - vendor-data:/var/www/html/vendor
     depends_on:
       - db
@@ -26,7 +41,7 @@ services:
     ports:
       - "8000:80"
     volumes:
-      - ./:/var/www/html:cached
+      - ./public:/var/www/html/public:ro
       - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
     depends_on:
       - app
@@ -48,12 +63,17 @@ services:
   node:
     image: node:22
     container_name: repsol-filament-node
+    profiles:
+      - assets
     working_dir: /var/www/html
-    environment:
-      CHOKIDAR_USEPOLLING: "1"
-      CHOKIDAR_INTERVAL: "250"
     volumes:
-      - ./:/var/www/html:cached
+      - ./app:/var/www/html/app:cached
+      - ./public:/var/www/html/public:cached
+      - ./resources:/var/www/html/resources:cached
+      - ./package.json:/var/www/html/package.json:cached
+      - ./package-lock.json:/var/www/html/package-lock.json:cached
+      - ./vite.config.js:/var/www/html/vite.config.js:cached
+      - vendor-data:/var/www/html/vendor
       - node-modules-data:/var/www/html/node_modules
     command: >
       sh -lc "if [ ! -d node_modules ] || [ -z \"$(ls -A node_modules 2>/dev/null)\" ]; then npm ci; fi; rm -f public/hot; npm run build"

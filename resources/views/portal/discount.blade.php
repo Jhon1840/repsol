@@ -2,9 +2,12 @@
     <section class="rider-entry">
         <article class="rider-entry-card">
             <header class="rider-entry-header">
-                <div class="rider-entry-logo">-</div>
+                <div class="rider-entry-logo">
+                    <img src="{{ asset('assets/REPSOL LUBRICANTS VERTICAL BLANCO.png') }}" alt="Repsol Lubricants">
+                </div>
+                <span class="rider-entry-eyebrow">Gestión interna</span>
                 <h1>Descuento de Puntos</h1>
-                <p>Ingresa el ID del rider y los puntos a descontar.</p>
+                <p>Ingresa el ID del rider y los puntos a descontar desde el saldo actual.</p>
             </header>
 
             <form action="{{ route('portal.discount') }}" method="POST" class="rider-entry-form">
@@ -70,3 +73,4 @@
         </article>
     </section>
 </x-portal.layout>
+

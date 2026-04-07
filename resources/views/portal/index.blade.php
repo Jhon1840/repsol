@@ -2,9 +2,12 @@
     <section class="rider-entry">
         <article class="rider-entry-card">
             <header class="rider-entry-header">
-                <div class="rider-entry-logo">R</div>
+                <div class="rider-entry-logo">
+                    <img src="{{ asset('assets/REPSOL LUBRICANTS VERTICAL BLANCO.png') }}" alt="Repsol Lubricants">
+                </div>
+                <span class="rider-entry-eyebrow">Consulta oficial</span>
                 <h1>Consulta de Puntos</h1>
-                <p>Ingresa tu ID para consultar tus puntos acumulados.</p>
+                <p>Ingresa tu ID para consultar tus puntos acumulados dentro del programa Riders.</p>
             </header>
 
             <form action="{{ route('portal.search') }}" method="POST" class="rider-entry-form">
@@ -41,3 +44,4 @@
         </article>
     </section>
 </x-portal.layout>
+

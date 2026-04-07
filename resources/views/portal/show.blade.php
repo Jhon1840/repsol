@@ -2,7 +2,10 @@
     <section class="rider-result">
         <article class="rider-result-card">
             <header class="rider-result-header">
-                <div class="rider-result-icon">✓</div>
+                <div class="rider-result-icon">
+                    <img src="{{ asset('assets/REPSOL LUBRICANTS VERTICAL BLANCO.png') }}" alt="Repsol Lubricants">
+                </div>
+                <span class="rider-entry-eyebrow">Resumen del rider</span>
                 <h1>Hola, {{ $rider->name }}</h1>
                 <p>ID {{ $rider->rider_id }}</p>
             </header>

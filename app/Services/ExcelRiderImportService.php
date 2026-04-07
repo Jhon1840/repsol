@@ -13,6 +13,8 @@ use OpenSpout\Reader\Common\Creator\ReaderFactory;
 
 class ExcelRiderImportService
 {
+    protected const TARGET_SHEET_NAME = 'REPORTE A SUBIR';
+
     public function storeAndImport(UploadedFile $file, ?int $uploadedBy, array $metadata = []): UploadedDocument
     {
         return $this->storeDocumentAndImport($file, null, $uploadedBy, $metadata);
@@ -51,14 +53,14 @@ class ExcelRiderImportService
 
                 foreach ($parsed['parsed_riders'] as $parsedRider) {
                     $rider = $this->resolveRider($parsedRider, $targetRider);
-                    $points = (int) round($parsedRider['liters_total']);
+                    $points = (int) round($parsedRider['points_total']);
 
                     if ($points < 1) {
                         $skippedItems[] = [
                             'rider_id' => $parsedRider['rider_id'],
                             'row_numbers' => $parsedRider['row_numbers'],
-                            'liters_total' => $parsedRider['liters_total'],
-                            'reason' => 'El total de litros del rider no alcanza para generar puntos.',
+                            'points_total' => $parsedRider['points_total'],
+                            'reason' => 'El total de puntos del rider no alcanza para generar puntos.',
                         ];
 
                         continue;
@@ -74,11 +76,11 @@ class ExcelRiderImportService
                         'occurred_at' => $document->uploaded_at,
                         'metadata' => [
                             'source' => 'excel_auto_import',
-                            'branch' => $parsedRider['branch'],
                             'rider_code' => $rider->rider_id,
                             'rider_name' => $parsedRider['rider_name'],
-                            'sale_note_numbers' => $parsedRider['sale_note_numbers'],
-                            'liters_total' => $parsedRider['liters_total'],
+                            'article_codes' => $parsedRider['article_codes'],
+                            'article_descriptions' => $parsedRider['article_descriptions'],
+                            'points_total' => $parsedRider['points_total'],
                             'row_numbers' => $parsedRider['row_numbers'],
                         ],
                     ]);
@@ -87,11 +89,11 @@ class ExcelRiderImportService
                     $processedItems[] = [
                         'rider_id' => $rider->rider_id,
                         'movement_id' => $movement->getKey(),
-                        'branch' => $parsedRider['branch'],
-                        'liters_total' => $parsedRider['liters_total'],
+                        'points_total' => $parsedRider['points_total'],
                         'points' => $movement->points,
                         'row_numbers' => $parsedRider['row_numbers'],
-                        'sale_note_numbers' => $parsedRider['sale_note_numbers'],
+                        'article_codes' => $parsedRider['article_codes'],
+                        'article_descriptions' => $parsedRider['article_descriptions'],
                     ];
 
                     if ($documentRiderId === null && count($parsed['parsed_riders']) === 1) {
@@ -130,8 +132,18 @@ class ExcelRiderImportService
         $reader->open($path);
 
         try {
+            $fallbackRows = null;
+
             foreach ($reader->getSheetIterator() as $sheet) {
-                return $this->parseRows($sheet->getRowIterator());
+                if (mb_strtoupper(trim($sheet->getName())) === self::TARGET_SHEET_NAME) {
+                    return $this->parseRows($sheet->getRowIterator());
+                }
+
+                $fallbackRows ??= iterator_to_array($sheet->getRowIterator());
+            }
+
+            if ($fallbackRows !== null) {
+                return $this->parseRows($fallbackRows);
             }
         } finally {
             $reader->close();
@@ -168,10 +180,10 @@ class ExcelRiderImportService
                 continue;
             }
 
-            $branch = $this->stringValue($values[0] ?? null);
-            $riderId = $this->normalizeRiderId($values[1] ?? null);
-            $riderName = $this->stringValue($values[2] ?? null);
-            $saleNoteNumber = $this->stringValue($values[3] ?? null);
+            $riderId = $this->normalizeRiderId($values[0] ?? null);
+            $riderName = $this->stringValue($values[1] ?? null);
+            $articleCode = $this->stringValue($values[3] ?? null);
+            $articleDescription = $this->stringValue($values[4] ?? null);
 
             if ($riderId === null) {
                 continue;
@@ -179,35 +191,39 @@ class ExcelRiderImportService
 
             if (! isset($parsedRiders[$riderId])) {
                 $parsedRiders[$riderId] = [
-                    'branch' => $branch,
                     'rider_id' => $riderId,
                     'rider_name' => $riderName,
-                    'liters_total' => 0.0,
+                    'points_total' => 0.0,
                     'row_numbers' => [],
-                    'sale_note_numbers' => [],
+                    'article_codes' => [],
+                    'article_descriptions' => [],
                 ];
             }
 
-            $liters = $this->parsePositiveNumber($values[7] ?? null);
+            $points = $this->parsePositiveNumber($values[8] ?? null);
 
-            if ($liters === null) {
+            if ($points === null) {
                 $skippedItems[] = [
                     'row_number' => $rowNumber,
-                    'branch' => $branch,
                     'rider_id' => $riderId,
-                    'sale_note_number' => $saleNoteNumber,
-                    'liters_raw' => $this->stringValue($values[7] ?? null),
-                    'reason' => 'La columna H no contiene un valor numerico positivo de litros.',
+                    'article_code' => $articleCode,
+                    'article_description' => $articleDescription,
+                    'points_raw' => $this->stringValue($values[8] ?? null),
+                    'reason' => 'La columna I no contiene un valor numerico positivo de puntos.',
                 ];
 
                 continue;
             }
 
-            $parsedRiders[$riderId]['liters_total'] += $liters;
+            $parsedRiders[$riderId]['points_total'] += $points;
             $parsedRiders[$riderId]['row_numbers'][] = $rowNumber;
 
-            if ($saleNoteNumber !== null) {
-                $parsedRiders[$riderId]['sale_note_numbers'][] = $saleNoteNumber;
+            if ($articleCode !== null) {
+                $parsedRiders[$riderId]['article_codes'][] = $articleCode;
+            }
+
+            if ($articleDescription !== null) {
+                $parsedRiders[$riderId]['article_descriptions'][] = $articleDescription;
             }
         }
 
@@ -219,8 +235,9 @@ class ExcelRiderImportService
 
         return [
             'parsed_riders' => array_values(array_map(function (array $rider): array {
-                $rider['liters_total'] = round($rider['liters_total'], 2);
-                $rider['sale_note_numbers'] = array_values(array_unique($rider['sale_note_numbers']));
+                $rider['points_total'] = round($rider['points_total'], 2);
+                $rider['article_codes'] = array_values(array_unique($rider['article_codes']));
+                $rider['article_descriptions'] = array_values(array_unique($rider['article_descriptions']));
 
                 return $rider;
             }, $parsedRiders)),
@@ -248,9 +265,8 @@ class ExcelRiderImportService
 
     protected function isHeaderRow(array $values): bool
     {
-        return $this->normalizeHeaderValue($values[0] ?? null) === 'SUCURSAL'
-            && $this->normalizeHeaderValue($values[1] ?? null) === 'CODIGO DEL RIDER'
-            && $this->normalizeHeaderValue($values[2] ?? null) === 'NOMBRE DEL RIDER';
+        return $this->normalizeHeaderValue($values[0] ?? null) === 'CODIGO'
+            && $this->normalizeHeaderValue($values[1] ?? null) === 'NOMBRE DEL RIDER';
     }
 
     protected function isRowEmpty(array $values): bool

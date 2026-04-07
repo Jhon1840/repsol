@@ -58,3 +58,15 @@ If you discover a security vulnerability within Laravel, please send an e-mail t
 
 The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
 # repsol
+
+## Docker performance
+
+If Docker feels very slow on Windows, the biggest bottleneck is usually the project location. This repository is currently under `OneDrive`, and bind mounts from `OneDrive` into Docker Desktop are noticeably slower than a normal local folder.
+
+Recommended setup:
+
+1. Move the project to a non-synced local path such as `C:\dev\repsol_filament`.
+2. Start the main stack with `docker compose up -d app nginx db`.
+3. Run the frontend container only when you need assets with `docker compose --profile assets run --rm node`.
+
+This compose file is optimized so the PHP and Nginx containers mount only the folders they actually need, which reduces file-sync overhead on Windows.

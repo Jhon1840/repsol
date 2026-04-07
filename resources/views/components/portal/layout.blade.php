@@ -18,6 +18,15 @@
     </script>
 </head>
 <body class="portal-shell">
+    <div class="portal-brand-bar">
+        <div class="portal-brand-bar-inner">
+
+            <div class="portal-brand-partner">
+                <img src="{{ asset('assets/REPSOL LUBRICANTS HORIZONTAL BLANCO.png') }}" alt="Repsol Lubricants">
+            </div>
+        </div>
+    </div>
+
     <button type="button" class="theme-toggle" id="portal-theme-toggle" aria-label="Cambiar tema">
         <span id="portal-theme-toggle-icon">◐</span>
     </button>
@@ -51,3 +60,4 @@
     </script>
 </body>
 </html>
+
