@@ -52,14 +52,14 @@
                 </div>
             </article>
 
-            {{-- Card: Puntos Totales --}}
+            {{-- Card: Promedio de puntos --}}
             <article class="group relative overflow-hidden rounded-[2rem] border border-[rgba(63,92,121,0.14)] bg-white/95 p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-[rgba(63,92,121,0.36)] dark:bg-slate-900/90">
                 <div class="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-gradient-to-br from-[#C12A3A]/12 to-[#E39B63]/16 blur-2xl transition group-hover:scale-125"></div>
                 <div class="relative flex items-start justify-between">
                     <div>
-                        <p class="text-xs font-semibold uppercase tracking-[0.22em] text-[#3F5C79] dark:text-[#F0D98A]">Puntos Totales</p>
-                        <p class="mt-3 text-4xl font-bold tracking-tight text-[#C12A3A] dark:text-[#F0D98A]">{{ number_format($totalPoints) }}</p>
-                        <p class="mt-1.5 text-sm text-slate-500 dark:text-slate-300">Acumulados por todos los riders</p>
+                        <p class="text-xs font-semibold uppercase tracking-[0.22em] text-[#3F5C79] dark:text-[#F0D98A]">Promedio de puntos</p>
+                        <p class="mt-3 text-4xl font-bold tracking-tight text-[#C12A3A] dark:text-[#F0D98A]">{{ number_format($averagePoints, 0) }}</p>
+                        <p class="mt-1.5 text-sm text-slate-500 dark:text-slate-300">Promedio por rider registrado</p>
                     </div>
                     <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#C12A3A] to-[#E39B63] text-white shadow-lg shadow-red-200/50 dark:shadow-red-900/30">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
@@ -115,11 +115,71 @@
 
         </section>
 
+        <section class="rounded-[2rem] border border-[rgba(63,92,121,0.14)] bg-white/95 p-6 shadow-sm dark:border-[rgba(63,92,121,0.36)] dark:bg-slate-950/90">
+            <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                <div>
+                    <p class="text-xs font-semibold uppercase tracking-[0.22em] text-[#3F5C79] dark:text-[#F0D98A]">KPI de puntos</p>
+                    <h3 class="mt-2 text-lg font-semibold text-[#0A1A2F] dark:text-white">Puntos cargados vs gastados</h3>
+                    <p class="mt-1 text-sm text-slate-500 dark:text-slate-300">Compara los puntos sumados contra los puntos descontados en el rango seleccionado.</p>
+                </div>
+
+                <div class="grid gap-3 sm:grid-cols-2">
+                    <label class="text-xs font-semibold uppercase tracking-[0.18em] text-[#3F5C79] dark:text-[#F0D98A]">
+                        Desde
+                        <input
+                            type="date"
+                            wire:model.live="pointsChartStartDate"
+                            class="mt-2 block w-full rounded-2xl border border-[#3F5C79]/20 bg-white px-4 py-2.5 text-sm font-medium normal-case tracking-normal text-[#0A1A2F] shadow-sm outline-none transition focus:border-[#E39B63] focus:ring-2 focus:ring-[#E39B63]/20 dark:border-[#3F5C79]/50 dark:bg-slate-900 dark:text-white"
+                        />
+                    </label>
+                    <label class="text-xs font-semibold uppercase tracking-[0.18em] text-[#3F5C79] dark:text-[#F0D98A]">
+                        Hasta
+                        <input
+                            type="date"
+                            wire:model.live="pointsChartEndDate"
+                            class="mt-2 block w-full rounded-2xl border border-[#3F5C79]/20 bg-white px-4 py-2.5 text-sm font-medium normal-case tracking-normal text-[#0A1A2F] shadow-sm outline-none transition focus:border-[#E39B63] focus:ring-2 focus:ring-[#E39B63]/20 dark:border-[#3F5C79]/50 dark:bg-slate-900 dark:text-white"
+                        />
+                    </label>
+                </div>
+            </div>
+
+            <div class="mt-6 grid gap-4 lg:grid-cols-[1fr_auto] lg:items-center">
+                <div class="grid gap-3 sm:grid-cols-2 text-sm">
+                    <div class="rounded-2xl border border-[#3F5C79]/20 bg-[#3F5C79]/5 px-4 py-3 dark:border-[#3F5C79]/40 dark:bg-[#3F5C79]/20">
+                        <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#3F5C79] dark:text-[#F0D98A]">Cargados</p>
+                        <p class="mt-1 text-xl font-bold tracking-tight text-[#1F3E5B] dark:text-white">{{ number_format($pointsChart['loadedTotal']) }}</p>
+                    </div>
+                    <div class="rounded-2xl border border-[#C12A3A]/20 bg-[#C12A3A]/5 px-4 py-3 dark:border-[#C12A3A]/35 dark:bg-[#C12A3A]/15">
+                        <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#C12A3A] dark:text-[#F0D98A]">Gastados / reducidos</p>
+                        <p class="mt-1 text-xl font-bold tracking-tight text-[#9B1F2C] dark:text-white">{{ number_format($pointsChart['spentTotal']) }}</p>
+                    </div>
+                </div>
+                <p class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Valor maximo: {{ number_format($pointsChart['maxValue']) }} puntos</p>
+            </div>
+
+            <div
+                id="dashboard-points-chart-wrapper"
+                data-points-chart='@json($pointsChart)'
+                class="relative mt-5 h-[420px] overflow-hidden rounded-[1.5rem] border border-[#E7DCC2] bg-gradient-to-b from-[#FFF8EB] to-[#FFF3D8] p-4 dark:border-slate-800 dark:bg-slate-900"
+                style="height: 420px;"
+                x-data
+                x-init="$nextTick(() => window.renderDashboardPointsChart?.())"
+                x-effect="$wire.pointsChartStartDate; $wire.pointsChartEndDate; $nextTick(() => window.renderDashboardPointsChart?.())"
+            >
+                <div
+                    id="dashboard-points-chart"
+                    class="relative z-0 w-full"
+                    style="height: 380px; min-height: 380px;"
+                    wire:ignore
+                ></div>
+            </div>
+        </section>
+
         <section class="grid gap-6 xl:grid-cols-[1.6fr_1fr]">
             <article class="rounded-[2rem] border border-[rgba(63,92,121,0.14)] bg-white/95 p-6 shadow-sm dark:border-[rgba(63,92,121,0.36)] dark:bg-slate-950/90">
                 <div class="mb-5">
-                    <h3 class="text-lg font-semibold text-[#0A1A2F] dark:text-white">Riders registrados</h3>
-                    <p class="text-sm text-slate-500 dark:text-slate-300">Ultimos riders con puntos acumulados.</p>
+                    <h3 class="text-lg font-semibold text-[#0A1A2F] dark:text-white">Top 5 riders</h3>
+                    <p class="text-sm text-slate-500 dark:text-slate-300">Riders con mas puntos acumulados.</p>
                 </div>
 
                 <div class="overflow-x-auto">
@@ -156,10 +216,6 @@
                             @endforelse
                         </tbody>
                     </table>
-                </div>
-
-                <div class="mt-4">
-                    {{ $riders->links() }}
                 </div>
             </article>
 
@@ -213,5 +269,108 @@
                 </div>
             </div>
         </div>
+
+        @once
+            <script src="https://cdn.canvasjs.com/canvasjs.min.js"></script>
+            <script>
+                window.renderDashboardPointsChart = function () {
+                    const wrapper = document.getElementById('dashboard-points-chart-wrapper');
+                    const container = document.getElementById('dashboard-points-chart');
+
+                    if (!wrapper || !container || !window.CanvasJS) {
+                        return;
+                    }
+
+                    const chartData = JSON.parse(wrapper.dataset.pointsChart || '{"rows":[]}');
+                    const rows = chartData.rows || [];
+                    const dateFormat = rows.length > 8 ? 'MMM YYYY' : 'DD MMM YYYY';
+                    const toDataPoints = (key) => rows.map((row) => ({
+                        x: new Date(`${row.date}T00:00:00`),
+                        y: Number(row[key] || 0),
+                        label: row.label,
+                    }));
+
+                    if (container.__dashboardPointsChart) {
+                        container.__dashboardPointsChart.destroy();
+                        container.innerHTML = '';
+                    }
+
+                    const chart = new CanvasJS.Chart(container, {
+                        animationEnabled: true,
+                        backgroundColor: 'transparent',
+                        culture: 'es',
+                        theme: 'light2',
+                        axisX: {
+                            labelFontColor: '#0A1A2F',
+                            labelFontWeight: 'bold',
+                            labelAngle: rows.length > 8 ? -35 : 0,
+                            valueFormatString: rows.length > 8 ? 'MMM YYYY' : 'DD MMM',
+                            lineColor: '#CBD5E1',
+                            tickColor: '#CBD5E1',
+                        },
+                        axisY: {
+                            title: 'Puntos',
+                            titleFontColor: '#3F5C79',
+                            labelFontColor: '#0A1A2F',
+                            gridColor: 'rgba(63, 92, 121, 0.14)',
+                            includeZero: true,
+                            minimum: 0,
+                        },
+                        legend: {
+                            cursor: 'pointer',
+                            fontColor: '#0A1A2F',
+                            itemclick: function (event) {
+                                event.dataSeries.visible = !(typeof event.dataSeries.visible === 'undefined' || event.dataSeries.visible);
+                                event.chart.render();
+                            },
+                        },
+                        toolTip: {
+                            shared: true,
+                            contentFormatter: function (event) {
+                                const dateLabel = CanvasJS.formatDate(event.entries[0].dataPoint.x, dateFormat);
+                                const lines = event.entries.map((entry) => `${entry.dataSeries.name}: <strong>${CanvasJS.formatNumber(entry.dataPoint.y, '#,##0')}</strong>`);
+
+                                return `<strong>${dateLabel}</strong><br>${lines.join('<br>')}`;
+                            },
+                        },
+                        data: [
+                            {
+                                type: 'spline',
+                                name: 'Cargados',
+                                showInLegend: true,
+                                color: '#3F5C79',
+                                markerSize: 8,
+                                lineThickness: 4,
+                                yValueFormatString: '#,##0 puntos',
+                                dataPoints: toDataPoints('loaded'),
+                            },
+                            {
+                                type: 'spline',
+                                name: 'Gastados/reducidos',
+                                showInLegend: true,
+                                color: '#C12A3A',
+                                markerSize: 8,
+                                lineThickness: 4,
+                                yValueFormatString: '#,##0 puntos',
+                                dataPoints: toDataPoints('spent'),
+                            },
+                        ],
+                    });
+
+                    chart.render();
+                    container.__dashboardPointsChart = chart;
+                };
+
+                window.renderDashboardPointsChart();
+
+                document.addEventListener('livewire:init', () => {
+                    Livewire.hook('morph.updated', ({ el }) => {
+                        if (el.id === 'dashboard-points-chart-wrapper' || el.querySelector?.('#dashboard-points-chart-wrapper')) {
+                            window.requestAnimationFrame(() => window.renderDashboardPointsChart());
+                        }
+                    });
+                });
+            </script>
+        @endonce
     </div>
 </x-filament-panels::page>

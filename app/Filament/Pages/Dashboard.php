@@ -6,10 +6,11 @@ use App\Models\Rider;
 use App\Models\RiderMovement;
 use App\Models\UploadedDocument;
 use App\Services\ExcelRiderImportService;
-use Illuminate\Validation\ValidationException;
 use Filament\Notifications\Notification;
 use Filament\Pages\Dashboard as BaseDashboard;
 use Filament\Support\Icons\Heroicon;
+use Illuminate\Support\Carbon;
+use Illuminate\Validation\ValidationException;
 use Livewire\WithFileUploads;
 use Livewire\WithPagination;
 
@@ -25,6 +26,16 @@ class Dashboard extends BaseDashboard
     protected string $view = 'filament.pages.dashboard';
 
     public $pendingExcel = null;
+
+    public ?string $pointsChartStartDate = null;
+
+    public ?string $pointsChartEndDate = null;
+
+    public function mount(): void
+    {
+        $this->pointsChartStartDate ??= now()->subMonths(5)->startOfMonth()->toDateString();
+        $this->pointsChartEndDate ??= now()->toDateString();
+    }
 
     public function getTitle(): string
     {
@@ -75,17 +86,82 @@ class Dashboard extends BaseDashboard
 
     protected function getViewData(): array
     {
+        $totalRiders = Rider::query()->count();
+        $totalPoints = (int) RiderMovement::query()->sum('points');
+
         return [
-            'totalRiders' => Rider::query()->count(),
-            'totalPoints' => (int) RiderMovement::query()->sum('points'),
+            'totalRiders' => $totalRiders,
+            'averagePoints' => $totalRiders > 0 ? $totalPoints / $totalRiders : 0,
             'riders' => Rider::query()
                 ->withPointsBalance()
+                ->orderByDesc('points_balance')
                 ->orderBy('name')
-                ->paginate(10),
+                ->limit(5)
+                ->get(),
             'recentDocuments' => UploadedDocument::query()
                 ->latest('uploaded_at')
                 ->limit(5)
                 ->get(),
+            'pointsChart' => $this->getPointsChartData(),
+        ];
+    }
+
+    protected function getPointsChartData(): array
+    {
+        $startDate = $this->pointsChartStartDate
+            ? Carbon::parse($this->pointsChartStartDate)->startOfDay()
+            : now()->subMonths(5)->startOfMonth();
+
+        $endDate = $this->pointsChartEndDate
+            ? Carbon::parse($this->pointsChartEndDate)->endOfDay()
+            : now()->endOfDay();
+
+        if ($startDate->greaterThan($endDate)) {
+            [$startDate, $endDate] = [$endDate->copy()->startOfDay(), $startDate->copy()->endOfDay()];
+        }
+
+        $groupByMonth = $startDate->diffInDays($endDate) > 92;
+        $keyFormat = $groupByMonth ? 'Y-m' : 'Y-m-d';
+        $labelFormat = $groupByMonth ? 'm/Y' : 'd/m';
+        $bucketStartDate = $groupByMonth ? $startDate->copy()->startOfMonth() : $startDate->copy();
+        $buckets = [];
+
+        for ($date = $bucketStartDate; $date->lessThanOrEqualTo($endDate); $date = $groupByMonth ? $date->addMonthNoOverflow() : $date->addDay()) {
+            $buckets[$date->format($keyFormat)] = [
+                'date' => $date->toDateString(),
+                'label' => $date->format($labelFormat),
+                'loaded' => 0,
+                'spent' => 0,
+            ];
+        }
+
+        RiderMovement::query()
+            ->whereBetween('occurred_at', [$startDate, $endDate])
+            ->get(['points', 'occurred_at'])
+            ->each(function (RiderMovement $movement) use (&$buckets, $keyFormat): void {
+                $key = $movement->occurred_at?->format($keyFormat);
+
+                if (! $key || ! isset($buckets[$key])) {
+                    return;
+                }
+
+                if ($movement->points >= 0) {
+                    $buckets[$key]['loaded'] += $movement->points;
+
+                    return;
+                }
+
+                $buckets[$key]['spent'] += abs($movement->points);
+            });
+
+        $rows = array_values($buckets);
+        $maxValue = max(1, ...array_map(fn (array $row): int => max($row['loaded'], $row['spent']), $rows));
+
+        return [
+            'rows' => $rows,
+            'maxValue' => $maxValue,
+            'loadedTotal' => array_sum(array_column($rows, 'loaded')),
+            'spentTotal' => array_sum(array_column($rows, 'spent')),
         ];
     }
 
