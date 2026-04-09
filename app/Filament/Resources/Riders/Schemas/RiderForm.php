@@ -2,6 +2,8 @@
 
 namespace App\Filament\Resources\Riders\Schemas;
 
+use App\Models\Rider;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
@@ -13,7 +15,7 @@ class RiderForm
         return $schema
             ->components([
                 Section::make('Datos del rider')
-                    ->description('Administra el ID, nombre y saldo de puntos del rider.')
+                    ->description('Administra el ID, nombre, rango y saldo de puntos del rider.')
                     ->schema([
                         TextInput::make('rider_id')
                             ->label('ID')
@@ -26,6 +28,15 @@ class RiderForm
                             ->required()
                             ->maxLength(255)
                             ->placeholder('SANDRA PARADA CABALLERO'),
+                        TextInput::make('branch')
+                            ->label('Sucursal')
+                            ->maxLength(255)
+                            ->placeholder('SANTA CRUZ'),
+                        Select::make('rango')
+                            ->label('Rango')
+                            ->options(Rider::RANGO_OPTIONS)
+                            ->required()
+                            ->native(false),
                         TextInput::make('points_balance')
                             ->label('Puntos')
                             ->numeric()

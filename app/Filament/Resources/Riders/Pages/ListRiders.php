@@ -95,9 +95,9 @@ class ListRiders extends ListRecords
         }
 
         if ($skippedRows > 0) {
-            return "El archivo {$name} procesó {$processedRiders} rider(es), omitió {$skippedRows} fila(s) y sumó {$points} punto(s).";
+            return "El archivo {$name} procesó {$processedRiders} movimiento(s) por rider/sucursal, omitió {$skippedRows} fila(s) y sumó {$points} punto(s).";
         }
 
-        return "El archivo {$name} procesó {$processedRiders} rider(es) y sumó {$points} punto(s).";
+        return "El archivo {$name} procesó {$processedRiders} movimiento(s) por rider/sucursal y sumó {$points} punto(s).";
     }
 }

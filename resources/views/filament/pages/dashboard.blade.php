@@ -20,6 +20,16 @@
         x-on:excel-selection-cancelled.window="clearSelection()"
         class="space-y-6"
     >
+        <div class="flex items-start justify-end" style="margin-top: -4.25rem; margin-bottom: 1rem;">
+            <div style="display: inline-flex; align-items: center; justify-content: flex-end; flex-shrink: 0;">
+                <img
+                    src="{{ asset('assets/Logo Latco2.png') }}"
+                    alt="Latco Universal S.R.L."
+                    style="display: block; height: 122px; width: auto; max-width: 500px; object-fit: contain;"
+                >
+            </div>
+        </div>
+
         {{-- ── Stat Cards ── --}}
         <section class="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
 
@@ -81,7 +91,7 @@
                 <div class="relative flex items-start justify-between">
                     <div>
                         <p class="text-xs font-semibold uppercase tracking-[0.22em] text-[#3F5C79] dark:text-[#F0D98A]">Subir Excel</p>
-                        <p class="mt-2 text-sm leading-relaxed text-slate-500 dark:text-slate-300">Carga un Excel para leer la hoja REPORTE A SUBIR con código en A, nombre en B, artículo en D, descripción en E y Total Puntos en I.</p>
+                        <p class="mt-2 text-sm leading-relaxed text-slate-500 dark:text-slate-300">Carga un Excel para leer la hoja REPORTE A SUBIR con sucursal en A, código en B, nombre en C, artículo en E, descripción en F y Total Puntos en J.</p>
                     </div>
                     <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#F6E8B7] text-[#0A1A2F] dark:bg-[#3F5C79]/35 dark:text-[#F0D98A]">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -252,7 +262,7 @@
                 </div>
 
                 <div class="mt-5 rounded-2xl border border-[#3F5C79]/12 bg-[#FFF8EB] p-5 text-sm text-slate-600 dark:border-[#3F5C79]/30 dark:bg-slate-900 dark:text-slate-300">
-                        El sistema buscará la hoja <strong>REPORTE A SUBIR</strong>, tomará el código del rider de <strong>A</strong>, el nombre de <strong>B</strong>, el artículo de <strong>D</strong>, la descripción de <strong>E</strong> y sumará el <strong>Total Puntos</strong> de <strong>I</strong> por rider.
+                        El sistema buscará la hoja <strong>REPORTE A SUBIR</strong>, tomará la sucursal de <strong>A</strong>, el código del rider de <strong>B</strong>, el nombre de <strong>C</strong>, el artículo de <strong>E</strong>, la descripción de <strong>F</strong> y sumará el <strong>Total Puntos</strong> de <strong>J</strong> por rider y sucursal.
                 </div>
 
                 @error('pendingExcel')

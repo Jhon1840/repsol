@@ -1,0 +1,241 @@
+:root {
+    color-scheme: dark;
+    --card: rgba(10, 26, 47, 0.92);
+    --card-border: rgba(240, 217, 138, 0.22);
+    --gold: #f0d98a;
+    --orange: #e39b63;
+    --red: #c12a3a;
+    --text: #ffffff;
+    --muted: #cbd5e1;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: Arial, Helvetica, sans-serif;
+    color: var(--text);
+    background:
+        radial-gradient(circle at top left, rgba(227, 155, 99, 0.28), transparent 32rem),
+        linear-gradient(135deg, #071426 0%, #0a1a2f 52%, #3f5c79 100%);
+}
+
+.portal-main {
+    display: grid;
+    min-height: 100vh;
+    place-items: center;
+    padding: 2rem 1rem;
+}
+
+.rider-entry {
+    width: min(100%, 32rem);
+}
+
+.rider-entry-card {
+    border: 1px solid var(--card-border);
+    border-radius: 2rem;
+    padding: 2rem;
+    background: var(--card);
+    box-shadow: 0 1.5rem 4rem rgba(0, 0, 0, 0.35);
+}
+
+.rider-entry-header {
+    text-align: center;
+}
+
+.rider-entry-logo {
+    display: inline-flex;
+    width: 8.5rem;
+    height: 8.5rem;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.rider-entry-logo img {
+    max-width: 6.5rem;
+    max-height: 6.5rem;
+    object-fit: contain;
+}
+
+.rider-entry-eyebrow {
+    display: block;
+    margin-top: 1.25rem;
+    color: var(--gold);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+}
+
+h1 {
+    margin: 0.75rem 0 0;
+    font-size: clamp(2rem, 7vw, 3rem);
+    line-height: 1;
+}
+
+p {
+    margin: 1rem auto 0;
+    max-width: 24rem;
+    color: var(--muted);
+    line-height: 1.6;
+}
+
+.rider-entry-form {
+    display: grid;
+    gap: 1rem;
+    margin-top: 2rem;
+}
+
+.rider-form-group {
+    display: grid;
+    gap: 0.5rem;
+}
+
+label {
+    color: var(--gold);
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+}
+
+input {
+    width: 100%;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    border-radius: 1rem;
+    padding: 1rem 1.1rem;
+    color: var(--text);
+    background: rgba(255, 255, 255, 0.08);
+    font: inherit;
+    outline: none;
+    text-transform: uppercase;
+}
+
+input:focus {
+    border-color: var(--gold);
+    box-shadow: 0 0 0 0.2rem rgba(240, 217, 138, 0.2);
+}
+
+.rider-submit-button {
+    border: 0;
+    border-radius: 999px;
+    padding: 1rem 1.5rem;
+    color: #ffffff;
+    background: linear-gradient(135deg, var(--red), var(--orange));
+    font: inherit;
+    font-weight: 800;
+    cursor: pointer;
+    transition: transform 160ms ease, opacity 160ms ease;
+}
+
+.rider-submit-button:hover,
+.rider-submit-button:focus {
+    transform: translateY(-1px);
+}
+
+.rider-submit-button:disabled {
+    cursor: wait;
+    opacity: 0.68;
+}
+
+.rider-example-hint,
+.rider-message {
+    color: var(--muted);
+    text-align: center;
+}
+
+.rider-message {
+    border-radius: 1rem;
+    padding: 0.85rem 1rem;
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.rider-message.is-error {
+    color: #fecaca;
+    background: rgba(193, 42, 58, 0.24);
+}
+
+.rider-result-card {
+    margin-top: 1.5rem;
+    border: 1px solid rgba(240, 217, 138, 0.32);
+    border-radius: 1.5rem;
+    padding: 1.5rem;
+    text-align: center;
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.rider-result-label {
+    color: var(--gold);
+    font-size: 0.8rem;
+    font-weight: 800;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+}
+
+#rider-points {
+    display: block;
+    margin-top: 0.5rem;
+    color: var(--gold);
+    font-size: clamp(3rem, 16vw, 5rem);
+    line-height: 1;
+}
+
+.rider-result-detail {
+    display: grid;
+    gap: 0.35rem;
+    margin-top: 1rem;
+    color: var(--muted);
+}
+
+.rider-movements {
+    margin-top: 1.5rem;
+    text-align: left;
+}
+
+.rider-movements h2 {
+    margin: 0 0 0.85rem;
+    color: var(--gold);
+    font-size: 0.85rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+}
+
+.rider-movement-list {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.rider-movement-item {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 0.75rem;
+    border-radius: 1rem;
+    padding: 0.85rem 1rem;
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.rider-movement-description {
+    color: var(--text);
+    font-weight: 700;
+}
+
+.rider-movement-date {
+    margin-top: 0.25rem;
+    color: var(--muted);
+    font-size: 0.82rem;
+}
+
+.rider-movement-points {
+    color: var(--gold);
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+[hidden] {
+    display: none !important;
+}

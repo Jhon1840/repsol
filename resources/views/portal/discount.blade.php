@@ -1,6 +1,14 @@
 <x-portal.layout title="Descuento de puntos">
     <section class="rider-entry">
         <article class="rider-entry-card">
+            @php
+                $selectedArticulos = collect(old('articulos', []))->map(fn ($id) => (string) $id);
+                $selectedNombres = $articulos
+                    ->filter(fn ($articulo) => $selectedArticulos->contains((string) $articulo->id))
+                    ->pluck('nombre')
+                    ->values();
+            @endphp
+
             <header class="rider-entry-header">
                 <div class="rider-entry-logo">
                     <img src="{{ asset('assets/REPSOL LUBRICANTS VERTICAL BLANCO.png') }}" alt="Repsol Lubricants">
@@ -58,12 +66,50 @@
                     </div>
                 @enderror
 
+                <div class="rider-form-group">
+                    <label for="articulos">Qué compró o canjeó</label>
+                    <details class="rider-multiselect" data-multiselect>
+                        <summary class="rider-multiselect-summary">
+                            <span class="rider-multiselect-label" data-multiselect-label>
+                                {{ $selectedNombres->isNotEmpty() ? $selectedNombres->implode(', ') : 'Selecciona uno o más artículos' }}
+                            </span>
+                            <span class="rider-multiselect-arrow" aria-hidden="true">▾</span>
+                        </summary>
+
+                        <div class="rider-multiselect-menu">
+                            @foreach ($articulos as $articulo)
+                                <label class="rider-multiselect-option">
+                                    <input
+                                        type="checkbox"
+                                        name="articulos[]"
+                                        value="{{ $articulo->id }}"
+                                        @checked($selectedArticulos->contains((string) $articulo->id))
+                                    >
+                                    <span>{{ $articulo->nombre }}</span>
+                                </label>
+                            @endforeach
+                        </div>
+                    </details>
+                </div>
+
+                @error('articulos')
+                    <div class="rider-error-message">
+                        {{ $message }}
+                    </div>
+                @enderror
+
+                @error('articulos.*')
+                    <div class="rider-error-message">
+                        {{ $message }}
+                    </div>
+                @enderror
+
                 <button type="submit" class="rider-submit-button">
                     Siguiente
                 </button>
 
                 <div class="rider-example-hint">
-                    <small>Solo se permiten valores enteros y no mayores al saldo actual del rider.</small>
+                    <small>Solo se permiten valores enteros y no mayores al saldo actual del rider. Puedes seleccionar uno o más artículos.</small>
                 </div>
             </form>
 
@@ -72,5 +118,32 @@
             </div>
         </article>
     </section>
+
+    <script>
+        (() => {
+            const multiselects = document.querySelectorAll('[data-multiselect]');
+
+            multiselects.forEach((multiselect) => {
+                const label = multiselect.querySelector('[data-multiselect-label]');
+                const checkboxes = [...multiselect.querySelectorAll('input[type="checkbox"]')];
+                const placeholder = 'Selecciona uno o más artículos';
+
+                const syncLabel = () => {
+                    const selected = checkboxes
+                        .filter((checkbox) => checkbox.checked)
+                        .map((checkbox) => checkbox.nextElementSibling?.textContent?.trim())
+                        .filter(Boolean);
+
+                    label.textContent = selected.length ? selected.join(', ') : placeholder;
+                };
+
+                checkboxes.forEach((checkbox) => {
+                    checkbox.addEventListener('change', syncLabel);
+                });
+
+                syncLabel();
+            });
+        })();
+    </script>
 </x-portal.layout>
 

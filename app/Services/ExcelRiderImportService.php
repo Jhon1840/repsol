@@ -58,6 +58,7 @@ class ExcelRiderImportService
                     if ($points < 1) {
                         $skippedItems[] = [
                             'rider_id' => $parsedRider['rider_id'],
+                            'branch' => $parsedRider['branch'],
                             'row_numbers' => $parsedRider['row_numbers'],
                             'points_total' => $parsedRider['points_total'],
                             'reason' => 'El total de puntos del rider no alcanza para generar puntos.',
@@ -68,7 +69,9 @@ class ExcelRiderImportService
 
                     $movement = RiderMovement::query()->create([
                         'rider_id' => $rider->getKey(),
+                        'user_id' => $uploadedBy,
                         'uploaded_document_id' => $document->getKey(),
+                        'branch' => $parsedRider['branch'],
                         'movement_type' => 'purchase',
                         'reference' => $document->original_name,
                         'description' => 'Importacion automatica desde Excel.',
@@ -76,6 +79,8 @@ class ExcelRiderImportService
                         'occurred_at' => $document->uploaded_at,
                         'metadata' => [
                             'source' => 'excel_auto_import',
+                            'actor_type' => 'excel',
+                            'branch' => $parsedRider['branch'],
                             'rider_code' => $rider->rider_id,
                             'rider_name' => $parsedRider['rider_name'],
                             'article_codes' => $parsedRider['article_codes'],
@@ -88,6 +93,7 @@ class ExcelRiderImportService
                     $processedPoints += $movement->points;
                     $processedItems[] = [
                         'rider_id' => $rider->rider_id,
+                        'branch' => $parsedRider['branch'],
                         'movement_id' => $movement->getKey(),
                         'points_total' => $parsedRider['points_total'],
                         'points' => $movement->points,
@@ -180,19 +186,23 @@ class ExcelRiderImportService
                 continue;
             }
 
-            $riderId = $this->normalizeRiderId($values[0] ?? null);
-            $riderName = $this->stringValue($values[1] ?? null);
-            $articleCode = $this->stringValue($values[3] ?? null);
-            $articleDescription = $this->stringValue($values[4] ?? null);
+            $branch = $this->normalizeBranch($values[0] ?? null);
+            $riderId = $this->normalizeRiderId($values[1] ?? null);
+            $riderName = $this->stringValue($values[2] ?? null);
+            $articleCode = $this->stringValue($values[4] ?? null);
+            $articleDescription = $this->stringValue($values[5] ?? null);
 
             if ($riderId === null) {
                 continue;
             }
 
-            if (! isset($parsedRiders[$riderId])) {
-                $parsedRiders[$riderId] = [
+            $parsedKey = $riderId.'|'.($branch ?? 'SIN SUCURSAL');
+
+            if (! isset($parsedRiders[$parsedKey])) {
+                $parsedRiders[$parsedKey] = [
                     'rider_id' => $riderId,
                     'rider_name' => $riderName,
+                    'branch' => $branch,
                     'points_total' => 0.0,
                     'row_numbers' => [],
                     'article_codes' => [],
@@ -200,30 +210,31 @@ class ExcelRiderImportService
                 ];
             }
 
-            $points = $this->parsePositiveNumber($values[8] ?? null);
+            $points = $this->parsePositiveNumber($values[9] ?? null);
 
             if ($points === null) {
                 $skippedItems[] = [
                     'row_number' => $rowNumber,
                     'rider_id' => $riderId,
+                    'branch' => $branch,
                     'article_code' => $articleCode,
                     'article_description' => $articleDescription,
-                    'points_raw' => $this->stringValue($values[8] ?? null),
-                    'reason' => 'La columna I no contiene un valor numerico positivo de puntos.',
+                    'points_raw' => $this->stringValue($values[9] ?? null),
+                    'reason' => 'La columna J no contiene un valor numerico positivo de puntos.',
                 ];
 
                 continue;
             }
 
-            $parsedRiders[$riderId]['points_total'] += $points;
-            $parsedRiders[$riderId]['row_numbers'][] = $rowNumber;
+            $parsedRiders[$parsedKey]['points_total'] += $points;
+            $parsedRiders[$parsedKey]['row_numbers'][] = $rowNumber;
 
             if ($articleCode !== null) {
-                $parsedRiders[$riderId]['article_codes'][] = $articleCode;
+                $parsedRiders[$parsedKey]['article_codes'][] = $articleCode;
             }
 
             if ($articleDescription !== null) {
-                $parsedRiders[$riderId]['article_descriptions'][] = $articleDescription;
+                $parsedRiders[$parsedKey]['article_descriptions'][] = $articleDescription;
             }
         }
 
@@ -254,19 +265,35 @@ class ExcelRiderImportService
                 ]);
             }
 
+            if ($parsedRider['branch'] !== null && $targetRider->branch === null) {
+                $targetRider->update(['branch' => $parsedRider['branch']]);
+            }
+
             return $targetRider;
         }
 
-        return Rider::query()->updateOrCreate(
-            ['rider_id' => $parsedRider['rider_id']],
-            ['name' => $parsedRider['rider_name'] ?: $parsedRider['rider_id']]
-        );
+        $rider = Rider::query()->firstOrNew(['rider_id' => $parsedRider['rider_id']]);
+        $isNewRider = ! $rider->exists;
+        $rider->name = $parsedRider['rider_name'] ?: $parsedRider['rider_id'];
+
+        if ($parsedRider['branch'] !== null && $rider->branch === null) {
+            $rider->branch = $parsedRider['branch'];
+        }
+
+        if ($isNewRider) {
+            $rider->creation_source = 'excel';
+            $rider->created_by = null;
+        }
+
+        $rider->save();
+
+        return $rider;
     }
 
     protected function isHeaderRow(array $values): bool
     {
-        return $this->normalizeHeaderValue($values[0] ?? null) === 'CODIGO'
-            && $this->normalizeHeaderValue($values[1] ?? null) === 'NOMBRE DEL RIDER';
+        return $this->normalizeHeaderValue($values[0] ?? null) === 'SUCURSAL'
+            && $this->normalizeHeaderValue($values[1] ?? null) === 'CODIGO';
     }
 
     protected function isRowEmpty(array $values): bool
@@ -290,6 +317,28 @@ class ExcelRiderImportService
 
         $value = strtoupper($value);
         $value = str_replace('.', '', $value);
+        $value = strtr($value, [
+            'Á' => 'A',
+            'É' => 'E',
+            'Í' => 'I',
+            'Ó' => 'O',
+            'Ú' => 'U',
+            'Ñ' => 'N',
+        ]);
+        $value = preg_replace('/\s+/u', ' ', $value) ?? $value;
+
+        return trim($value);
+    }
+
+    protected function normalizeBranch(mixed $value): ?string
+    {
+        $value = $this->stringValue($value);
+
+        if ($value === null) {
+            return null;
+        }
+
+        $value = strtoupper($value);
         $value = preg_replace('/\s+/u', ' ', $value) ?? $value;
 
         return trim($value);
@@ -339,7 +388,7 @@ class ExcelRiderImportService
     protected function buildProcessingNotes(int $processedCount, int $skippedCount): string
     {
         if ($processedCount > 0 && $skippedCount === 0) {
-            return 'Documento Excel procesado automaticamente por rider.';
+            return 'Documento Excel procesado automaticamente por rider y sucursal.';
         }
 
         if ($processedCount > 0) {

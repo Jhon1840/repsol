@@ -37,12 +37,15 @@
 
                 <div class="rider-activity-list">
                     @forelse ($rider->movements->take(3) as $movement)
+                        @php($movementDescription = data_get($movement->metadata, 'source') === 'excel_auto_import'
+                            ? 'Puntos agregados por su compra'
+                            : ($movement->description ?? ucfirst($movement->movement_type)))
                         <article class="rider-activity-item">
-                            <div class="rider-activity-icon">+</div>
+                            <div class="rider-activity-icon">{{ $movement->points < 0 ? '-' : '+' }}</div>
 
                             <div class="rider-activity-info">
                                 <div class="rider-activity-description">
-                                    {{ $movement->description ?? ucfirst($movement->movement_type) }}
+                                    {{ $movementDescription }}
                                 </div>
 
                                 <div class="rider-activity-date">
@@ -51,7 +54,7 @@
                             </div>
 
                             <div class="rider-activity-points">
-                                +{{ number_format($movement->points) }}
+                                {{ $movement->points > 0 ? '+' : '' }}{{ number_format($movement->points) }}
                             </div>
                         </article>
                     @empty
@@ -75,6 +78,11 @@
                 <div class="rider-info-row">
                     <span class="rider-info-label">Nombre</span>
                     <span class="rider-info-value">{{ $rider->name }}</span>
+                </div>
+
+                <div class="rider-info-row">
+                    <span class="rider-info-label">Rango</span>
+                    <span class="rider-info-value">{{ $rider->rango ?? 'Sin rango' }}</span>
                 </div>
 
                 <div class="rider-info-row">

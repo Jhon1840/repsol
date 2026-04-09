@@ -2,10 +2,14 @@
 
 namespace App\Filament\Resources\Riders\Tables;
 
+use App\Models\Rider;
+use App\Models\RiderMovement;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 class RidersTable
 {
@@ -22,6 +26,17 @@ class RidersTable
                     ->searchable()
                     ->sortable()
                     ->wrap(),
+                TextColumn::make('branch')
+                    ->label('Sucursal')
+                    ->placeholder('Sin sucursal')
+                    ->searchable()
+                    ->sortable(),
+                TextColumn::make('rango')
+                    ->label('Rango')
+                    ->placeholder('Sin rango')
+                    ->badge()
+                    ->searchable()
+                    ->sortable(),
                 TextColumn::make('points_balance')
                     ->label('Puntos')
                     ->state(fn ($record): int => $record->points_balance)
@@ -29,7 +44,27 @@ class RidersTable
                     ->sortable(query: fn ($query, string $direction) => $query->withPointsBalance()->orderBy('points_balance', $direction)),
             ])
             ->filters([
-                //
+                SelectFilter::make('branch')
+                    ->label('Sucursal')
+                    ->options(fn (): array => self::branchOptions())
+                    ->native(false)
+                    ->query(function (Builder $query, array $data): Builder {
+                        $branch = $data['value'] ?? null;
+
+                        if (blank($branch)) {
+                            return $query;
+                        }
+
+                        return $query->where(function (Builder $query) use ($branch): void {
+                            $query
+                                ->where('branch', $branch)
+                                ->orWhereHas('movements', fn (Builder $query): Builder => $query->where('branch', $branch));
+                        });
+                    }),
+                SelectFilter::make('rango')
+                    ->label('Rango')
+                    ->options(Rider::RANGO_OPTIONS)
+                    ->native(false),
             ])
             ->recordActions([
                 ViewAction::make()
@@ -39,5 +74,28 @@ class RidersTable
             ])
             ->defaultSort('name')
             ->paginated([10, 25, 50]);
+    }
+
+    protected static function branchOptions(): array
+    {
+        return collect([
+            ...Rider::query()
+                ->whereNotNull('branch')
+                ->distinct()
+                ->orderBy('branch')
+                ->pluck('branch')
+                ->all(),
+            ...RiderMovement::query()
+                ->whereNotNull('branch')
+                ->distinct()
+                ->orderBy('branch')
+                ->pluck('branch')
+                ->all(),
+        ])
+            ->filter()
+            ->unique()
+            ->sort()
+            ->mapWithKeys(fn (string $branch): array => [$branch => $branch])
+            ->all();
     }
 }

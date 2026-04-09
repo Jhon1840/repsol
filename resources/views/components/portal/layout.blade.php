@@ -22,7 +22,7 @@
         <div class="portal-brand-bar-inner">
 
             <div class="portal-brand-partner">
-                <img src="{{ asset('assets/REPSOL LUBRICANTS HORIZONTAL BLANCO.png') }}" alt="Repsol Lubricants">
+                <img src="{{ asset('assets/Logo Latco2.png') }}" alt="Latco Universal S.R.L.">
             </div>
         </div>
     </div>

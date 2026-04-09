@@ -18,11 +18,17 @@ class RiderInfolist
                             ->label('ID'),
                         TextEntry::make('name')
                             ->label('Nombre'),
+                        TextEntry::make('branch')
+                            ->label('Sucursal')
+                            ->placeholder('Sin sucursal'),
+                        TextEntry::make('rango')
+                            ->label('Rango')
+                            ->placeholder('Sin rango'),
                         TextEntry::make('points_balance')
                             ->label('Puntos')
                             ->state(fn ($record): int => $record->points_balance),
                     ])
-                    ->columns(3),
+                    ->columns(4),
             ]);
     }
 }

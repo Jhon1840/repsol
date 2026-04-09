@@ -38,7 +38,7 @@ class EditRider extends EditRecord
                         ->maxSize(20480)
                         ->required()
                         ->storeFiles(false)
-                        ->helperText('Se leerá la hoja REPORTE A SUBIR usando código en A, nombre en B, artículo en D, descripción en E y Total Puntos en I.'),
+                        ->helperText('Se leerá la hoja REPORTE A SUBIR usando sucursal en A, código en B, nombre en C, artículo en E, descripción en F y Total Puntos en J.'),
                 ])
                 ->action(function (array $data): void {
                     try {
@@ -96,7 +96,10 @@ class EditRider extends EditRecord
 
     protected function handleRecordUpdate(Model $record, array $data): Model
     {
-        $record->update($data);
+        $record->update([
+            ...$data,
+            'updated_by' => auth()->id(),
+        ]);
 
         $currentPointsBalance = (int) $record->movements()->sum('points');
         $targetPointsBalance = $this->targetPointsBalance ?? $currentPointsBalance;
@@ -105,6 +108,7 @@ class EditRider extends EditRecord
         if ($pointsDelta !== 0) {
             RiderMovement::create([
                 'rider_id' => $record->getKey(),
+                'user_id' => auth()->id(),
                 'movement_type' => 'manual_adjustment',
                 'reference' => 'FILAMENT-EDIT',
                 'description' => 'Ajuste manual desde la edicion del rider.',
@@ -112,6 +116,7 @@ class EditRider extends EditRecord
                 'occurred_at' => now(),
                 'metadata' => [
                     'source' => 'filament_edit_rider',
+                    'actor_type' => 'user',
                     'target_points_balance' => $targetPointsBalance,
                     'previous_points_balance' => $currentPointsBalance,
                 ],

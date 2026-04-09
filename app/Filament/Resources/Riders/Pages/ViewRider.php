@@ -18,8 +18,10 @@ class ViewRider extends ViewRecord
         parent::mount($record);
 
         $this->record->load([
-            'movements' => fn ($query) => $query->latest('occurred_at'),
-            'documents' => fn ($query) => $query->latest('uploaded_at'),
+            'creator',
+            'editor',
+            'movements' => fn ($query) => $query->with('actor')->latest('occurred_at'),
+            'documents' => fn ($query) => $query->with('uploader')->latest('uploaded_at'),
         ])->loadSum('movements as points_balance', 'points');
     }
 
