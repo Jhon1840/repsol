@@ -46,6 +46,35 @@ body {
     text-align: center;
 }
 
+.rider-brand-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1.25rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+}
+
+.rider-top-logo {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 10.5rem;
+    min-height: 6rem;
+    max-height: 6rem;
+    overflow: hidden;
+    flex: 0 0 auto;
+}
+
+.rider-top-logo img {
+    display: block;
+    width: 10.5rem !important;
+    max-width: 10.5rem !important;
+    height: auto !important;
+    max-height: 6rem !important;
+    object-fit: contain;
+}
+
 .rider-entry-logo {
     display: inline-flex;
     width: 8.5rem;
@@ -54,6 +83,7 @@ body {
     justify-content: center;
     border-radius: 999px;
     background: rgba(255, 255, 255, 0.08);
+    flex: 0 0 auto;
 }
 
 .rider-entry-logo img {

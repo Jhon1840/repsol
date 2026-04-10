@@ -7,6 +7,7 @@ use App\Models\Rider;
 use App\Models\RiderMovement;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class RiderLookupController extends Controller
@@ -134,7 +135,29 @@ class RiderLookupController extends Controller
         ]);
 
         return redirect()
-            ->route('portal.discount.form')
+            ->to($this->discountRedirectUrl($request))
             ->with('success', "Se descontaron {$pointsToDiscount} punto(s) al rider {$rider->rider_id} por: {$redemptionDescription}. Saldo restante: " . number_format($availablePoints - $pointsToDiscount) . '.');
+    }
+
+    protected function discountRedirectUrl(Request $request): string
+    {
+        $redirectTo = $request->string('redirect_to')->toString();
+
+        if (blank($redirectTo)) {
+            return route('portal.discount.form');
+        }
+
+        if (Str::startsWith($redirectTo, ['/'])) {
+            return $redirectTo;
+        }
+
+        $appHost = parse_url(url('/'), PHP_URL_HOST);
+        $targetHost = parse_url($redirectTo, PHP_URL_HOST);
+
+        if ($targetHost !== null && $targetHost === $appHost) {
+            return $redirectTo;
+        }
+
+        return route('portal.discount.form');
     }
 }
