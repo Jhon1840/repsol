@@ -6,8 +6,11 @@ use App\Models\Rider;
 use App\Models\RiderMovement;
 use App\Models\UploadedDocument;
 use App\Services\ExcelRiderImportService;
+use Filament\Forms\Components\DatePicker;
 use Filament\Notifications\Notification;
 use Filament\Pages\Dashboard as BaseDashboard;
+use Filament\Pages\Dashboard\Concerns\HasFiltersForm;
+use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Carbon;
 use Illuminate\Validation\ValidationException;
@@ -16,6 +19,7 @@ use Livewire\WithPagination;
 
 class Dashboard extends BaseDashboard
 {
+    use HasFiltersForm;
     use WithFileUploads;
     use WithPagination;
 
@@ -33,8 +37,41 @@ class Dashboard extends BaseDashboard
 
     public function mount(): void
     {
-        $this->pointsChartStartDate ??= now()->subMonths(5)->startOfMonth()->toDateString();
-        $this->pointsChartEndDate ??= now()->toDateString();
+        $this->setDefaultPointsChartFilters();
+    }
+
+    public function filtersForm(Schema $schema): Schema
+    {
+        return $schema
+            ->columns([
+                'sm' => 2,
+            ])
+            ->schema([
+                DatePicker::make('pointsChartStartDate')
+                    ->label('Desde')
+                    ->native(false)
+                    ->displayFormat('d/m/Y')
+                    ->format('Y-m-d')
+                    ->closeOnDateSelection()
+                    ->live(),
+                DatePicker::make('pointsChartEndDate')
+                    ->label('Hasta')
+                    ->native(false)
+                    ->displayFormat('d/m/Y')
+                    ->format('Y-m-d')
+                    ->closeOnDateSelection()
+                    ->live(),
+            ]);
+    }
+
+    public function updatedFilters(): void
+    {
+        $this->syncPointsChartPropertiesFromFilters();
+    }
+
+    public function persistsFiltersInSession(): bool
+    {
+        return false;
     }
 
     public function getTitle(): string
@@ -87,6 +124,8 @@ class Dashboard extends BaseDashboard
 
     protected function getViewData(): array
     {
+        $this->setDefaultPointsChartFilters();
+
         $totalRiders = Rider::query()->visibleTo(auth()->user())->count();
         $totalPoints = (int) $this->movementQuery()->sum('points');
 
@@ -110,12 +149,15 @@ class Dashboard extends BaseDashboard
 
     protected function getPointsChartData(): array
     {
-        $startDate = $this->pointsChartStartDate
-            ? Carbon::parse($this->pointsChartStartDate)->startOfDay()
-            : now()->subMonths(5)->startOfMonth();
+        $startDateValue = $this->filters['pointsChartStartDate'] ?? $this->pointsChartStartDate;
+        $endDateValue = $this->filters['pointsChartEndDate'] ?? $this->pointsChartEndDate;
 
-        $endDate = $this->pointsChartEndDate
-            ? Carbon::parse($this->pointsChartEndDate)->endOfDay()
+        $startDate = $startDateValue
+            ? Carbon::parse($startDateValue)->startOfDay()
+            : now()->startOfMonth();
+
+        $endDate = $endDateValue
+            ? Carbon::parse($endDateValue)->endOfDay()
             : now()->endOfDay();
 
         if ($startDate->greaterThan($endDate)) {
@@ -187,6 +229,22 @@ class Dashboard extends BaseDashboard
         }
 
         return $query->whereHas('rider', fn ($query) => $query->where('branch', $branch));
+    }
+
+    private function setDefaultPointsChartFilters(): void
+    {
+        $this->filters ??= [];
+
+        $this->filters['pointsChartStartDate'] ??= now()->startOfMonth()->toDateString();
+        $this->filters['pointsChartEndDate'] ??= now()->toDateString();
+
+        $this->syncPointsChartPropertiesFromFilters();
+    }
+
+    private function syncPointsChartPropertiesFromFilters(): void
+    {
+        $this->pointsChartStartDate = $this->filters['pointsChartStartDate'] ?? null;
+        $this->pointsChartEndDate = $this->filters['pointsChartEndDate'] ?? null;
     }
 
     protected function buildUploadMessage(UploadedDocument $document): string

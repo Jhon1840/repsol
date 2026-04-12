@@ -133,23 +133,8 @@
                     <p class="mt-1 text-sm text-slate-500 dark:text-slate-300">Compara los puntos sumados contra los puntos descontados en el rango seleccionado.</p>
                 </div>
 
-                <div class="grid gap-3 sm:grid-cols-2">
-                    <label class="text-xs font-semibold uppercase tracking-[0.18em] text-[#3F5C79] dark:text-[#F0D98A]">
-                        Desde
-                        <input
-                            type="date"
-                            wire:model.live="pointsChartStartDate"
-                            class="mt-2 block w-full rounded-2xl border border-[#3F5C79]/20 bg-white px-4 py-2.5 text-sm font-medium normal-case tracking-normal text-[#0A1A2F] shadow-sm outline-none transition focus:border-[#E39B63] focus:ring-2 focus:ring-[#E39B63]/20 dark:border-[#3F5C79]/50 dark:bg-slate-900 dark:text-white"
-                        />
-                    </label>
-                    <label class="text-xs font-semibold uppercase tracking-[0.18em] text-[#3F5C79] dark:text-[#F0D98A]">
-                        Hasta
-                        <input
-                            type="date"
-                            wire:model.live="pointsChartEndDate"
-                            class="mt-2 block w-full rounded-2xl border border-[#3F5C79]/20 bg-white px-4 py-2.5 text-sm font-medium normal-case tracking-normal text-[#0A1A2F] shadow-sm outline-none transition focus:border-[#E39B63] focus:ring-2 focus:ring-[#E39B63]/20 dark:border-[#3F5C79]/50 dark:bg-slate-900 dark:text-white"
-                        />
-                    </label>
+                <div class="min-w-full lg:min-w-[26rem]">
+                    {{ $this->filtersForm }}
                 </div>
             </div>
 
@@ -174,7 +159,7 @@
                 style="height: 420px;"
                 x-data
                 x-init="$nextTick(() => window.renderDashboardPointsChart?.())"
-                x-effect="$wire.pointsChartStartDate; $wire.pointsChartEndDate; $nextTick(() => window.renderDashboardPointsChart?.())"
+                x-effect="$wire.filters; $nextTick(() => window.renderDashboardPointsChart?.())"
             >
                 <div
                     id="dashboard-points-chart"
