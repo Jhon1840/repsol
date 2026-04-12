@@ -21,7 +21,9 @@ class PurchaseApiTest extends TestCase
         $product = Product::query()->create([
             'name' => 'Aceite 4T',
             'code' => 'RPP2065THC',
-            'liters' => 4,
+            'liters' => 12,
+            'points_per_box' => 2400,
+            'points_per_liter' => 200,
         ]);
 
         $response = $this->postJson('/api/purchases', [
@@ -34,14 +36,14 @@ class PurchaseApiTest extends TestCase
             ->assertJson([
                 'rider_code' => 'SC00065',
                 'product_code' => 'RPP2065THC',
-                'points' => 4,
+                'points' => 2400,
             ]);
 
         $this->assertDatabaseHas('rider_movements', [
             'rider_id' => $rider->getKey(),
             'product_id' => $product->getKey(),
             'movement_type' => 'purchase',
-            'points' => 4,
+            'points' => 2400,
             'description' => 'RPP2065THC Aceite 4T',
         ]);
 
@@ -53,7 +55,7 @@ class PurchaseApiTest extends TestCase
 
         $rider->loadSum('movements as points_balance', 'points');
 
-        $this->assertSame(4, $rider->points_balance);
+        $this->assertSame(2400, $rider->points_balance);
     }
 
     public function test_it_returns_validation_error_when_rider_code_does_not_exist(): void
@@ -61,7 +63,9 @@ class PurchaseApiTest extends TestCase
         Product::query()->create([
             'name' => 'Aceite 4T',
             'code' => 'RPP2065THC',
-            'liters' => 4,
+            'liters' => 12,
+            'points_per_box' => 2400,
+            'points_per_liter' => 200,
         ]);
 
         $response = $this->postJson('/api/purchases', [
@@ -97,9 +101,13 @@ class PurchaseApiTest extends TestCase
             'name' => 'Producto Demo',
             'code' => 'PROD-001',
             'liters' => 1.5,
+            'points_per_box' => 300,
+            'points_per_liter' => 200,
         ])->fresh();
 
         $this->assertSame('1.50', $product->liters);
+        $this->assertSame('300.00', $product->points_per_box);
+        $this->assertSame('200.00', $product->points_per_liter);
 
         $this->expectException(\Illuminate\Database\QueryException::class);
 
@@ -107,6 +115,8 @@ class PurchaseApiTest extends TestCase
             'name' => 'Producto Duplicado',
             'code' => 'PROD-001',
             'liters' => 2,
+            'points_per_box' => 400,
+            'points_per_liter' => 200,
         ]);
     }
 }

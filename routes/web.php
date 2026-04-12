@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\SessionRefreshController;
+use App\Http\Controllers\UploadedDocumentDownloadController;
 use App\Http\Controllers\UploadedDocumentPreviewController;
 use App\Http\Controllers\RiderLookupController;
 use Filament\Http\Middleware\Authenticate;
@@ -17,3 +18,6 @@ Route::middleware([Authenticate::class])->group(function (): void {
 Route::get('/documents/{document}/preview', UploadedDocumentPreviewController::class)
     ->middleware('signed')
     ->name('documents.preview');
+Route::get('/documents/{document}/download', UploadedDocumentDownloadController::class)
+    ->middleware('signed')
+    ->name('documents.download');

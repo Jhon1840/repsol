@@ -63,6 +63,8 @@ class RiderResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()->withPointsBalance();
+        return parent::getEloquentQuery()
+            ->visibleTo(auth()->user())
+            ->withPointsBalance(auth()->user());
     }
 }

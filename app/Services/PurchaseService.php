@@ -49,7 +49,7 @@ class PurchaseService
             throw ValidationException::withMessages($errors);
         }
 
-        $pointsPerUnit = (int) round((float) $product->liters);
+        $pointsPerUnit = (int) round((float) $product->points_per_box);
         $points = $pointsPerUnit * $quantity;
         $description = $attributes['description']
             ?? ($quantity > 1 ? "{$product->code} {$product->name} x {$quantity}" : "{$product->code} {$product->name}");
@@ -60,6 +60,9 @@ class PurchaseService
             'product_code' => $productCode,
             'quantity' => $quantity,
             'points_per_unit' => $pointsPerUnit,
+            'points_per_box' => (float) $product->points_per_box,
+            'points_per_liter' => (float) $product->points_per_liter,
+            'liters_per_unit' => (float) $product->liters,
         ], $attributes['metadata'] ?? []);
 
         return RiderMovement::query()->create([

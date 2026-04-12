@@ -17,12 +17,33 @@ class RiderLookupController extends Controller
         return view('portal.index');
     }
 
-    public function discountForm(): View
+    public function discountForm(Request $request): View|RedirectResponse
     {
+        $rider = null;
+        $riderId = trim($request->string('rider_id')->toString());
+
+        if (filled($riderId)) {
+            $rider = Rider::query()
+                ->visibleTo(auth()->user())
+                ->withPointsBalance(auth()->user())
+                ->where('rider_id', strtoupper($riderId))
+                ->first();
+
+            if (! $rider) {
+                return redirect()
+                    ->route('portal.discount.form')
+                    ->withInput($request->only('rider_id'))
+                    ->withErrors([
+                        'rider_id' => 'No se encontró un rider con ese ID.',
+                    ]);
+            }
+        }
+
         return view('portal.discount', [
             'articulos' => Articulos::query()
                 ->orderBy('nombre')
                 ->get(['id', 'nombre']),
+            'rider' => $rider,
         ]);
     }
 
@@ -33,7 +54,8 @@ class RiderLookupController extends Controller
         ]);
 
         $rider = Rider::query()
-            ->withPointsBalance()
+            ->visibleTo(auth()->user())
+            ->withPointsBalance(auth()->user())
             ->where('rider_id', strtoupper(trim($validated['rider_id'])))
             ->first();
 
@@ -50,10 +72,22 @@ class RiderLookupController extends Controller
 
     public function show(Rider $rider): View
     {
+        abort_unless(
+            Rider::query()
+                ->visibleTo(auth()->user())
+                ->whereKey($rider->getKey())
+                ->exists(),
+            404,
+        );
+
         $rider->load([
-            'movements' => fn ($query) => $query->latest('occurred_at')->limit(8),
+            'movements' => fn ($query) => $query
+                ->latest('occurred_at')
+                ->limit(8),
             'documents' => fn ($query) => $query->latest('uploaded_at')->limit(6),
-        ])->loadSum('movements as points_balance', 'points');
+        ]);
+
+        $rider->loadSum('movements as points_balance', 'points');
 
         return view('portal.show', [
             'rider' => $rider,
@@ -66,11 +100,12 @@ class RiderLookupController extends Controller
             'rider_id' => ['required', 'string', 'max:255'],
             'points' => ['required', 'integer', 'min:1'],
             'articulos' => ['required', 'array', 'min:1'],
-            'articulos.*' => ['integer', 'exists:articulos,id'],
+            'articulos.*' => ['integer', 'min:1'],
         ]);
 
         $rider = Rider::query()
-            ->withPointsBalance()
+            ->visibleTo(auth()->user())
+            ->withPointsBalance(auth()->user())
             ->where('rider_id', strtoupper(trim($validated['rider_id'])))
             ->first();
 
@@ -84,20 +119,36 @@ class RiderLookupController extends Controller
 
         $availablePoints = (int) $rider->points_balance;
         $pointsToDiscount = (int) $validated['points'];
-        $selectedArticleIds = collect($validated['articulos'])
-            ->map(fn (mixed $id): int => (int) $id)
+        $selectedArticleQuantities = collect($validated['articulos'])
+            ->mapWithKeys(fn (mixed $quantity, string | int $id): array => [(int) $id => (int) $quantity])
+            ->filter(fn (int $quantity, int $id): bool => $id > 0 && $quantity > 0);
+
+        $selectedArticleIds = $selectedArticleQuantities
+            ->keys()
             ->values();
 
         $selectedArticles = Articulos::query()
             ->whereIn('id', $selectedArticleIds)
             ->get(['id', 'nombre']);
 
-        $selectedArticleNames = $selectedArticleIds
-            ->map(fn (int $id): ?string => $selectedArticles->firstWhere('id', $id)?->nombre)
+        $selectedArticleDetails = $selectedArticleIds
+            ->map(function (int $id) use ($selectedArticles, $selectedArticleQuantities): ?array {
+                $article = $selectedArticles->firstWhere('id', $id);
+
+                if (! $article) {
+                    return null;
+                }
+
+                return [
+                    'id' => $id,
+                    'nombre' => $article->nombre,
+                    'quantity' => $selectedArticleQuantities->get($id),
+                ];
+            })
             ->filter()
             ->values();
 
-        if ($selectedArticleNames->isEmpty()) {
+        if ($selectedArticleDetails->isEmpty() || $selectedArticleDetails->count() !== $selectedArticleIds->count()) {
             return back()
                 ->withInput()
                 ->withErrors([
@@ -105,7 +156,9 @@ class RiderLookupController extends Controller
                 ]);
         }
 
-        $redemptionDescription = $selectedArticleNames->implode(', ');
+        $redemptionDescription = $selectedArticleDetails
+            ->map(fn (array $article): string => "{$article['quantity']} x {$article['nombre']}")
+            ->implode(', ');
 
         if ($pointsToDiscount > $availablePoints) {
             return back()
@@ -118,6 +171,7 @@ class RiderLookupController extends Controller
         RiderMovement::create([
             'rider_id' => $rider->getKey(),
             'user_id' => auth()->id(),
+            'branch' => auth()->user()?->branchScope() ?? $rider->branch,
             'movement_type' => 'points_redemption',
             'reference' => 'PORTAL-DISCOUNT',
             'description' => "Canje de puntos: {$redemptionDescription}",
@@ -128,7 +182,11 @@ class RiderLookupController extends Controller
                 'actor_type' => 'user',
                 'discounted_points' => $pointsToDiscount,
                 'selected_article_ids' => $selectedArticleIds->all(),
-                'selected_article_names' => $selectedArticleNames->all(),
+                'selected_article_names' => $selectedArticleDetails->pluck('nombre')->all(),
+                'selected_article_quantities' => $selectedArticleDetails
+                    ->mapWithKeys(fn (array $article): array => [$article['id'] => $article['quantity']])
+                    ->all(),
+                'selected_articles' => $selectedArticleDetails->all(),
                 'previous_points_balance' => $availablePoints,
                 'remaining_points_balance' => $availablePoints - $pointsToDiscount,
             ],
@@ -144,7 +202,9 @@ class RiderLookupController extends Controller
         $redirectTo = $request->string('redirect_to')->toString();
 
         if (blank($redirectTo)) {
-            return route('portal.discount.form');
+            return route('portal.discount.form', [
+                'rider_id' => $request->string('rider_id')->toString(),
+            ]);
         }
 
         if (Str::startsWith($redirectTo, ['/'])) {

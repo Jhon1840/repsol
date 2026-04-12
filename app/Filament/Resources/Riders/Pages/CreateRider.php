@@ -17,6 +17,10 @@ class CreateRider extends CreateRecord
 
     protected function handleRecordCreation(array $data): Rider
     {
+        if ($branch = auth()->user()?->branchScope()) {
+            $data['branch'] = $branch;
+        }
+
         $data['created_by'] = auth()->id();
         $data['creation_source'] = 'manual';
 

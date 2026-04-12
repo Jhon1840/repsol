@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Product;
 use App\Models\Rider;
 use App\Models\RiderMovement;
 use App\Models\UploadedDocument;
@@ -14,6 +15,8 @@ use OpenSpout\Reader\Common\Creator\ReaderFactory;
 class ExcelRiderImportService
 {
     protected const TARGET_SHEET_NAME = 'REPORTE A SUBIR';
+
+    protected const DOCUMENT_DISK = 'local';
 
     public function storeAndImport(UploadedFile $file, ?int $uploadedBy, array $metadata = []): UploadedDocument
     {
@@ -28,7 +31,7 @@ class ExcelRiderImportService
     protected function storeDocumentAndImport(UploadedFile $file, ?Rider $targetRider, ?int $uploadedBy, array $metadata = []): UploadedDocument
     {
         $directory = $targetRider ? 'documents/riders' : 'documents/global';
-        $path = $file->store($directory, 'public');
+        $path = $file->store($directory, self::DOCUMENT_DISK);
 
         try {
             return DB::transaction(function () use ($file, $uploadedBy, $metadata, $path, $targetRider): UploadedDocument {
@@ -37,7 +40,7 @@ class ExcelRiderImportService
                     'uploaded_by' => $uploadedBy,
                     'original_name' => $file->getClientOriginalName(),
                     'path' => $path,
-                    'disk' => 'public',
+                    'disk' => self::DOCUMENT_DISK,
                     'mime_type' => $file->getMimeType(),
                     'size' => $file->getSize(),
                     'status' => 'pending_assignment',
@@ -45,7 +48,8 @@ class ExcelRiderImportService
                     'metadata' => $metadata,
                 ]);
 
-                $parsed = $this->extractImportData(Storage::disk($document->disk)->path($document->path));
+                $branchScope = $this->normalizeBranch($metadata['branch_scope'] ?? null);
+                $parsed = $this->extractImportData(Storage::disk($document->disk)->path($document->path), $branchScope);
                 $processedItems = [];
                 $skippedItems = $parsed['skipped_items'];
                 $processedPoints = 0;
@@ -85,6 +89,7 @@ class ExcelRiderImportService
                             'rider_name' => $parsedRider['rider_name'],
                             'article_codes' => $parsedRider['article_codes'],
                             'article_descriptions' => $parsedRider['article_descriptions'],
+                            'line_items' => $parsedRider['line_items'],
                             'points_total' => $parsedRider['points_total'],
                             'row_numbers' => $parsedRider['row_numbers'],
                         ],
@@ -100,6 +105,7 @@ class ExcelRiderImportService
                         'row_numbers' => $parsedRider['row_numbers'],
                         'article_codes' => $parsedRider['article_codes'],
                         'article_descriptions' => $parsedRider['article_descriptions'],
+                        'line_items' => $parsedRider['line_items'],
                     ];
 
                     if ($documentRiderId === null && count($parsed['parsed_riders']) === 1) {
@@ -126,13 +132,13 @@ class ExcelRiderImportService
                 return $document->fresh(['rider', 'movements']);
             });
         } catch (\Throwable $exception) {
-            Storage::disk('public')->delete($path);
+            Storage::disk(self::DOCUMENT_DISK)->delete($path);
 
             throw $exception;
         }
     }
 
-    public function extractImportData(string $path): array
+    public function extractImportData(string $path, ?string $branchScope = null): array
     {
         $reader = ReaderFactory::createFromFile($path);
         $reader->open($path);
@@ -142,14 +148,14 @@ class ExcelRiderImportService
 
             foreach ($reader->getSheetIterator() as $sheet) {
                 if (mb_strtoupper(trim($sheet->getName())) === self::TARGET_SHEET_NAME) {
-                    return $this->parseRows($sheet->getRowIterator());
+                    return $this->parseRows($sheet->getRowIterator(), $branchScope);
                 }
 
                 $fallbackRows ??= iterator_to_array($sheet->getRowIterator());
             }
 
             if ($fallbackRows !== null) {
-                return $this->parseRows($fallbackRows);
+                return $this->parseRows($fallbackRows, $branchScope);
             }
         } finally {
             $reader->close();
@@ -160,11 +166,15 @@ class ExcelRiderImportService
         ]);
     }
 
-    protected function parseRows(iterable $rows): array
+    protected function parseRows(iterable $rows, ?string $branchScope = null): array
     {
         $parsedRiders = [];
         $skippedItems = [];
         $rowNumber = 0;
+        $headers = null;
+        $products = Product::query()
+            ->get()
+            ->keyBy(fn (Product $product): string => $this->normalizeProductCode($product->code));
 
         foreach ($rows as $row) {
             $rowNumber++;
@@ -174,7 +184,9 @@ class ExcelRiderImportService
                 $values[] = $cell->getValue();
             }
 
-            if ($rowNumber === 1) {
+            if ($headers === null && $this->looksLikeHeaderRow($values)) {
+                $headers = $this->buildHeaderMap($values);
+
                 continue;
             }
 
@@ -186,13 +198,29 @@ class ExcelRiderImportService
                 continue;
             }
 
-            $branch = $this->normalizeBranch($values[0] ?? null);
-            $riderId = $this->normalizeRiderId($values[1] ?? null);
-            $riderName = $this->stringValue($values[2] ?? null);
-            $articleCode = $this->stringValue($values[4] ?? null);
-            $articleDescription = $this->stringValue($values[5] ?? null);
+            $branch = $this->normalizeBranch($this->valueFor($values, $headers, 'branch'));
+            $riderId = $this->normalizeRiderId($this->valueFor($values, $headers, 'rider_id'));
+            $riderName = $this->stringValue($this->valueFor($values, $headers, 'rider_name'));
+            $articleCode = $this->normalizeProductCode($this->valueFor($values, $headers, 'article_code'));
+            $articleDescription = $this->stringValue($this->valueFor($values, $headers, 'article_description'));
+            $liters = $this->parsePositiveNumber($this->valueFor($values, $headers, 'liters'));
 
             if ($riderId === null) {
+                continue;
+            }
+
+            if ($branchScope !== null && $branch !== $branchScope) {
+                $skippedItems[] = [
+                    'row_number' => $rowNumber,
+                    'rider_id' => $riderId,
+                    'branch' => $branch,
+                    'article_code' => $articleCode,
+                    'article_description' => $articleDescription,
+                    'reason' => $branch === null
+                        ? 'La fila no tiene sucursal y el usuario solo puede procesar su sucursal.'
+                        : 'La fila pertenece a otra sucursal.',
+                ];
+
                 continue;
             }
 
@@ -207,27 +235,52 @@ class ExcelRiderImportService
                     'row_numbers' => [],
                     'article_codes' => [],
                     'article_descriptions' => [],
+                    'line_items' => [],
                 ];
             }
 
-            $points = $this->parsePositiveNumber($values[9] ?? null);
-
-            if ($points === null) {
+            if ($articleCode === null || ! $products->has($articleCode)) {
                 $skippedItems[] = [
                     'row_number' => $rowNumber,
                     'rider_id' => $riderId,
                     'branch' => $branch,
                     'article_code' => $articleCode,
                     'article_description' => $articleDescription,
-                    'points_raw' => $this->stringValue($values[9] ?? null),
-                    'reason' => 'La columna J no contiene un valor numerico positivo de puntos.',
+                    'reason' => 'El articulo no existe en la tabla de productos.',
                 ];
 
                 continue;
             }
 
+            if ($liters === null) {
+                $skippedItems[] = [
+                    'row_number' => $rowNumber,
+                    'rider_id' => $riderId,
+                    'branch' => $branch,
+                    'article_code' => $articleCode,
+                    'article_description' => $articleDescription,
+                    'liters_raw' => $this->stringValue($this->valueFor($values, $headers, 'liters')),
+                    'reason' => 'La columna Litros no contiene un valor numerico positivo.',
+                ];
+
+                continue;
+            }
+
+            /** @var Product $product */
+            $product = $products->get($articleCode);
+            $pointsPerLiter = (float) $product->points_per_liter;
+            $points = $liters * $pointsPerLiter;
+
             $parsedRiders[$parsedKey]['points_total'] += $points;
             $parsedRiders[$parsedKey]['row_numbers'][] = $rowNumber;
+            $parsedRiders[$parsedKey]['line_items'][] = [
+                'row_number' => $rowNumber,
+                'article_code' => $articleCode,
+                'article_description' => $articleDescription,
+                'liters' => round($liters, 2),
+                'points_per_liter' => round($pointsPerLiter, 2),
+                'points' => round($points, 2),
+            ];
 
             if ($articleCode !== null) {
                 $parsedRiders[$parsedKey]['article_codes'][] = $articleCode;
@@ -249,6 +302,7 @@ class ExcelRiderImportService
                 $rider['points_total'] = round($rider['points_total'], 2);
                 $rider['article_codes'] = array_values(array_unique($rider['article_codes']));
                 $rider['article_descriptions'] = array_values(array_unique($rider['article_descriptions']));
+                $rider['line_items'] = array_values($rider['line_items']);
 
                 return $rider;
             }, $parsedRiders)),
@@ -294,6 +348,57 @@ class ExcelRiderImportService
     {
         return $this->normalizeHeaderValue($values[0] ?? null) === 'SUCURSAL'
             && $this->normalizeHeaderValue($values[1] ?? null) === 'CODIGO';
+    }
+
+    protected function looksLikeHeaderRow(array $values): bool
+    {
+        $normalized = array_map(fn (mixed $value): ?string => $this->normalizeHeaderValue($value), $values);
+
+        return in_array('CODIGO', $normalized, true)
+            && in_array('ARTICULO', $normalized, true)
+            && in_array('LITROS', $normalized, true);
+    }
+
+    protected function buildHeaderMap(array $values): array
+    {
+        $map = [];
+
+        foreach ($values as $index => $value) {
+            $header = $this->normalizeHeaderValue($value);
+
+            match ($header) {
+                'SUCURSAL' => $map['branch'] = $index,
+                'CODIGO' => $map['rider_id'] = $index,
+                'NOMBRE DEL RIDER', 'NOMBRE RIDER', 'RIDER' => $map['rider_name'] = $index,
+                'ARTICULO', 'CODIGO SAP' => $map['article_code'] = $index,
+                'DESCRIPCION' => $map['article_description'] = $index,
+                'LITROS' => $map['liters'] = $index,
+                default => null,
+            };
+        }
+
+        return $map;
+    }
+
+    protected function valueFor(array $values, ?array $headers, string $field): mixed
+    {
+        if ($headers !== null && array_key_exists($field, $headers)) {
+            return $values[$headers[$field]] ?? null;
+        }
+
+        if ($headers !== null) {
+            return null;
+        }
+
+        return match ($field) {
+            'branch' => $values[0] ?? null,
+            'rider_id' => $values[1] ?? null,
+            'rider_name' => $values[2] ?? null,
+            'article_code' => $values[4] ?? null,
+            'article_description' => $values[5] ?? null,
+            'liters' => $values[7] ?? null,
+            default => null,
+        };
     }
 
     protected function isRowEmpty(array $values): bool
@@ -345,6 +450,13 @@ class ExcelRiderImportService
     }
 
     protected function normalizeRiderId(mixed $value): ?string
+    {
+        $value = $this->stringValue($value);
+
+        return $value !== null ? strtoupper($value) : null;
+    }
+
+    protected function normalizeProductCode(mixed $value): ?string
     {
         $value = $this->stringValue($value);
 

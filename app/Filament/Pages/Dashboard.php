@@ -61,6 +61,7 @@ class Dashboard extends BaseDashboard
                 [
                     'source' => 'dashboard_upload',
                     'notes' => 'Carga automatizada de Excel desde dashboard.',
+                    'branch_scope' => auth()->user()?->branchScope(),
                 ],
             );
         } catch (ValidationException $exception) {
@@ -86,19 +87,20 @@ class Dashboard extends BaseDashboard
 
     protected function getViewData(): array
     {
-        $totalRiders = Rider::query()->count();
-        $totalPoints = (int) RiderMovement::query()->sum('points');
+        $totalRiders = Rider::query()->visibleTo(auth()->user())->count();
+        $totalPoints = (int) $this->movementQuery()->sum('points');
 
         return [
             'totalRiders' => $totalRiders,
             'averagePoints' => $totalRiders > 0 ? $totalPoints / $totalRiders : 0,
             'riders' => Rider::query()
-                ->withPointsBalance()
+                ->visibleTo(auth()->user())
+                ->withPointsBalance(auth()->user())
                 ->orderByDesc('points_balance')
                 ->orderBy('name')
                 ->limit(5)
                 ->get(),
-            'recentDocuments' => UploadedDocument::query()
+            'recentDocuments' => $this->documentQuery()
                 ->latest('uploaded_at')
                 ->limit(5)
                 ->get(),
@@ -135,7 +137,7 @@ class Dashboard extends BaseDashboard
             ];
         }
 
-        RiderMovement::query()
+        $this->movementQuery()
             ->whereBetween('occurred_at', [$startDate, $endDate])
             ->get(['points', 'occurred_at'])
             ->each(function (RiderMovement $movement) use (&$buckets, $keyFormat): void {
@@ -163,6 +165,28 @@ class Dashboard extends BaseDashboard
             'loadedTotal' => array_sum(array_column($rows, 'loaded')),
             'spentTotal' => array_sum(array_column($rows, 'spent')),
         ];
+    }
+
+    protected function movementQuery()
+    {
+        $query = RiderMovement::query();
+        $branch = auth()->user()?->branchScope();
+
+        return $branch === null
+            ? $query
+            : $query->whereHas('rider', fn ($query) => $query->where('branch', $branch));
+    }
+
+    protected function documentQuery()
+    {
+        $query = UploadedDocument::query();
+        $branch = auth()->user()?->branchScope();
+
+        if ($branch === null) {
+            return $query;
+        }
+
+        return $query->whereHas('rider', fn ($query) => $query->where('branch', $branch));
     }
 
     protected function buildUploadMessage(UploadedDocument $document): string

@@ -38,7 +38,7 @@ class EditRider extends EditRecord
                         ->maxSize(20480)
                         ->required()
                         ->storeFiles(false)
-                        ->helperText('Se leerá la hoja REPORTE A SUBIR usando sucursal en A, código en B, nombre en C, artículo en E, descripción en F y Total Puntos en J.'),
+                        ->helperText('Se leerá la hoja REPORTE A SUBIR y se calculará puntos como Litros comprados x Puntos por litro del producto.'),
                 ])
                 ->action(function (array $data): void {
                     try {
@@ -49,6 +49,7 @@ class EditRider extends EditRecord
                             [
                                 'source' => 'rider_edit_upload',
                                 'notes' => 'Carga automatizada de Excel desde la vista del rider.',
+                                'branch_scope' => auth()->user()?->branchScope(),
                             ],
                         );
                     } catch (ValidationException $exception) {
@@ -71,7 +72,7 @@ class EditRider extends EditRecord
                         ->success()
                         ->send();
 
-                    $this->record->refresh()->loadSum('movements as points_balance', 'points');
+                    $this->loadRecordPointsBalance();
                 }),
             ViewAction::make(),
             DeleteAction::make()->label('Eliminar'),
@@ -96,12 +97,17 @@ class EditRider extends EditRecord
 
     protected function handleRecordUpdate(Model $record, array $data): Model
     {
+        if ($branch = auth()->user()?->branchScope()) {
+            $data['branch'] = $branch;
+        }
+
         $record->update([
             ...$data,
             'updated_by' => auth()->id(),
         ]);
 
-        $currentPointsBalance = (int) $record->movements()->sum('points');
+        $currentPointsBalance = (int) $record->movements()
+            ->sum('points');
         $targetPointsBalance = $this->targetPointsBalance ?? $currentPointsBalance;
         $pointsDelta = $targetPointsBalance - $currentPointsBalance;
 
@@ -109,6 +115,7 @@ class EditRider extends EditRecord
             RiderMovement::create([
                 'rider_id' => $record->getKey(),
                 'user_id' => auth()->id(),
+                'branch' => $record->branch,
                 'movement_type' => 'manual_adjustment',
                 'reference' => 'FILAMENT-EDIT',
                 'description' => 'Ajuste manual desde la edicion del rider.',
@@ -123,8 +130,14 @@ class EditRider extends EditRecord
             ]);
         }
 
-        $record->loadSum('movements as points_balance', 'points');
+        $this->loadRecordPointsBalance();
 
         return $record;
+    }
+
+    protected function loadRecordPointsBalance(): void
+    {
+        $this->record->refresh();
+        $this->record->loadSum('movements as points_balance', 'points');
     }
 }

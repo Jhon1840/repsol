@@ -20,12 +20,14 @@ class DatabaseSeeder extends Seeder
             [
                 'name' => 'Administrador Repsol',
                 'role' => User::ROLE_ADMIN,
+                'branch' => null,
                 'password' => 'password',
             ],
         );
 
         $this->call([
             ArticulosSeeder::class,
+            ProductSeeder::class,
         ]);
     }
 }

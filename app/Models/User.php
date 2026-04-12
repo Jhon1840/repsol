@@ -19,6 +19,21 @@ class User extends Authenticatable implements FilamentUser
 
     public const ROLE_MARKETING = 'marketing';
 
+    public const ROLE_BRANCH_MANAGER = 'branch_manager';
+
+    public const RIDER_BRANCH_SCOPED_ROLES = [
+        self::ROLE_MARKETING,
+        self::ROLE_BRANCH_MANAGER,
+    ];
+
+    public const BRANCH_OPTIONS = [
+        'COCHABAMBA' => 'COCHABAMBA',
+        'LA PAZ' => 'LA PAZ',
+        'SANTA CRUZ' => 'SANTA CRUZ',
+        'SUCRE' => 'SUCRE',
+        'TARIJA' => 'TARIJA',
+    ];
+
     /**
      * The attributes that are mass assignable.
      *
@@ -29,6 +44,7 @@ class User extends Authenticatable implements FilamentUser
         'email',
         'password',
         'role',
+        'branch',
     ];
 
     /**
@@ -56,11 +72,32 @@ class User extends Authenticatable implements FilamentUser
 
     public function canAccessPanel(Panel $panel): bool
     {
-        return in_array($this->role, [self::ROLE_ADMIN, self::ROLE_MARKETING], true);
+        if ($this->hasRiderBranchScopedRole()) {
+            return filled($this->branch);
+        }
+
+        return $this->isAdmin();
     }
 
     public function isAdmin(): bool
     {
         return $this->role === self::ROLE_ADMIN;
+    }
+
+    public function isBranchManager(): bool
+    {
+        return $this->role === self::ROLE_BRANCH_MANAGER;
+    }
+
+    public function hasRiderBranchScopedRole(): bool
+    {
+        return in_array($this->role, self::RIDER_BRANCH_SCOPED_ROLES, true);
+    }
+
+    public function branchScope(): ?string
+    {
+        return $this->hasRiderBranchScopedRole() && filled($this->branch)
+            ? $this->branch
+            : null;
     }
 }

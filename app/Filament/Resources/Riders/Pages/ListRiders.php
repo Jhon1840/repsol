@@ -41,6 +41,7 @@ class ListRiders extends ListRecords
                 [
                     'source' => 'riders_list_upload',
                     'notes' => 'Carga automatizada de Excel desde la pantalla de riders.',
+                    'branch_scope' => auth()->user()?->branchScope(),
                 ],
             );
         } catch (ValidationException $exception) {
@@ -74,13 +75,35 @@ class ListRiders extends ListRecords
     public function getHeader(): ?View
     {
         return view('filament.resources.riders.pages.list-riders-header', [
-            'totalRiders' => Rider::query()->count(),
-            'totalPoints' => (int) RiderMovement::query()->sum('points'),
-            'recentDocuments' => UploadedDocument::query()
+            'totalRiders' => Rider::query()->visibleTo(auth()->user())->count(),
+            'totalPoints' => (int) $this->movementQuery()->sum('points'),
+            'recentDocuments' => $this->documentQuery()
                 ->latest('uploaded_at')
                 ->limit(5)
                 ->get(),
         ]);
+    }
+
+    protected function movementQuery()
+    {
+        $query = RiderMovement::query();
+        $branch = auth()->user()?->branchScope();
+
+        return $branch === null
+            ? $query
+            : $query->whereHas('rider', fn ($query) => $query->where('branch', $branch));
+    }
+
+    protected function documentQuery()
+    {
+        $query = UploadedDocument::query();
+        $branch = auth()->user()?->branchScope();
+
+        if ($branch === null) {
+            return $query;
+        }
+
+        return $query->whereHas('rider', fn ($query) => $query->where('branch', $branch));
     }
 
     protected function buildUploadMessage(UploadedDocument $document): string

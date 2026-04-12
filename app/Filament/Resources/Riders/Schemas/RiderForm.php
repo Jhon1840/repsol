@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Riders\Schemas;
 
 use App\Models\Rider;
+use App\Models\User;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Section;
@@ -28,10 +29,13 @@ class RiderForm
                             ->required()
                             ->maxLength(255)
                             ->placeholder('SANDRA PARADA CABALLERO'),
-                        TextInput::make('branch')
+                        Select::make('branch')
                             ->label('Sucursal')
-                            ->maxLength(255)
-                            ->placeholder('SANTA CRUZ'),
+                            ->options(User::BRANCH_OPTIONS)
+                            ->default(fn (): ?string => auth()->user()?->branchScope())
+                            ->disabled(fn (): bool => filled(auth()->user()?->branchScope()))
+                            ->dehydrated()
+                            ->native(false),
                         Select::make('rango')
                             ->label('Rango')
                             ->options(Rider::RANGO_OPTIONS)

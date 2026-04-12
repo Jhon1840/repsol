@@ -21,9 +21,18 @@ class ProductsTable
                     ->searchable()
                     ->sortable()
                     ->wrap(),
-                TextColumn::make('liters')
-                    ->label('Equivalencia')
-                    ->suffix(' L')
+                TextColumn::make('oil_type')
+                    ->label('Tipo')
+                    ->badge()
+                    ->searchable()
+                    ->sortable(),
+                TextColumn::make('points_per_box')
+                    ->label('Pts caja')
+                    ->numeric()
+                    ->sortable(),
+                TextColumn::make('points_per_liter')
+                    ->label('Pts litro')
+                    ->numeric()
                     ->sortable(),
                 TextColumn::make('updated_at')
                     ->label('Actualizado')

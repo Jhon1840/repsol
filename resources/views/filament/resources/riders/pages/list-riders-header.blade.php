@@ -101,7 +101,7 @@
             </div>
 
             <div class="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-5 text-sm text-slate-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">
-                El sistema leerá la sucursal en <strong>A</strong>, el código del rider en <strong>B</strong>, el nombre en <strong>C</strong>, el artículo en <strong>E</strong>, la descripción en <strong>F</strong> y sumará el <strong>Total Puntos</strong> de <strong>J</strong> por rider y sucursal.
+                El sistema buscará el artículo en la tabla de productos y calculará los puntos como <strong>Litros comprados x Puntos por litro</strong> por rider y sucursal.
             </div>
 
             <div class="mt-5 flex justify-end gap-3">

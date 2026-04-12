@@ -41,7 +41,7 @@ class RidersTable
                     ->label('Puntos')
                     ->state(fn ($record): int => $record->points_balance)
                     ->alignEnd()
-                    ->sortable(query: fn ($query, string $direction) => $query->withPointsBalance()->orderBy('points_balance', $direction)),
+                    ->sortable(query: fn ($query, string $direction) => $query->withPointsBalance(auth()->user())->orderBy('points_balance', $direction)),
             ])
             ->filters([
                 SelectFilter::make('branch')
@@ -55,11 +55,7 @@ class RidersTable
                             return $query;
                         }
 
-                        return $query->where(function (Builder $query) use ($branch): void {
-                            $query
-                                ->where('branch', $branch)
-                                ->orWhereHas('movements', fn (Builder $query): Builder => $query->where('branch', $branch));
-                        });
+                        return $query->where('branch', $branch);
                     }),
                 SelectFilter::make('rango')
                     ->label('Rango')
@@ -78,6 +74,10 @@ class RidersTable
 
     protected static function branchOptions(): array
     {
+        if ($branch = auth()->user()?->branchScope()) {
+            return [$branch => $branch];
+        }
+
         return collect([
             ...Rider::query()
                 ->whereNotNull('branch')

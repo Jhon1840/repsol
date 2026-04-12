@@ -3,13 +3,16 @@
 namespace App\Providers\Filament;
 
 use App\Filament\Auth\Login;
+use Filament\Enums\ThemeMode;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
+use Filament\Navigation\NavigationItem;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
+use Filament\Support\Icons\Heroicon;
 use Filament\View\PanelsRenderHook;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
@@ -32,10 +35,18 @@ class AdminPanelProvider extends PanelProvider
             ->brandLogoHeight('2.25rem')
             ->globalSearch(false)
             ->viteTheme('resources/css/filament/admin/theme.css')
+            ->darkMode(true, isForced: true)
+            ->defaultThemeMode(ThemeMode::Dark)
             ->renderHook(
                 PanelsRenderHook::BODY_END,
                 fn (): string => view('partials.session-refresh-script')->render(),
             )
+            ->navigationItems([
+                NavigationItem::make('Descuento')
+                    ->icon(Heroicon::OutlinedTicket)
+                    ->url('/descuento', shouldOpenInNewTab: true)
+                    ->sort(3),
+            ])
             ->colors([
                 'primary' => Color::hex('#3F5C79'),
                 'info' => Color::hex('#E39B63'),

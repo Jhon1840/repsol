@@ -52,9 +52,18 @@ class Rider extends Model
         return 'rider_id';
     }
 
-    public function scopeWithPointsBalance(Builder $query): Builder
+    public function scopeWithPointsBalance(Builder $query, ?User $user = null): Builder
     {
         return $query->withSum('movements as points_balance', 'points');
+    }
+
+    public function scopeVisibleTo(Builder $query, ?User $user): Builder
+    {
+        if (! $branch = $user?->branchScope()) {
+            return $query;
+        }
+
+        return $query->where('branch', $branch);
     }
 
     protected function pointsBalance(): Attribute

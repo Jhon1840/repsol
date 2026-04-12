@@ -27,10 +27,19 @@ class UserForm
                             ->options([
                                 User::ROLE_ADMIN => 'Admin',
                                 User::ROLE_MARKETING => 'Marketing',
+                                User::ROLE_BRANCH_MANAGER => 'Encargado de sucursal',
                             ])
                             ->required()
                             ->native(false)
+                            ->live()
                             ->default(User::ROLE_MARKETING),
+                        Select::make('branch')
+                            ->label('Sucursal')
+                            ->options(User::BRANCH_OPTIONS)
+                            ->required(fn ($get): bool => in_array($get('role'), User::RIDER_BRANCH_SCOPED_ROLES, true))
+                            ->visible(fn ($get): bool => in_array($get('role'), User::RIDER_BRANCH_SCOPED_ROLES, true))
+                            ->dehydrated()
+                            ->native(false),
                         TextInput::make('email')
                             ->label('Correo')
                             ->email()

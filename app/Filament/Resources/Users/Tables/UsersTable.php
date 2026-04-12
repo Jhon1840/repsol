@@ -23,14 +23,22 @@ class UsersTable
                     ->formatStateUsing(fn (string $state): string => match ($state) {
                         User::ROLE_ADMIN => 'Admin',
                         User::ROLE_MARKETING => 'Marketing',
+                        User::ROLE_BRANCH_MANAGER => 'Encargado de sucursal',
                         default => $state,
                     })
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
                         User::ROLE_ADMIN => 'danger',
                         User::ROLE_MARKETING => 'info',
+                        User::ROLE_BRANCH_MANAGER => 'success',
                         default => 'gray',
                     })
+                    ->sortable(),
+                TextColumn::make('branch')
+                    ->label('Sucursal')
+                    ->placeholder('Global')
+                    ->badge()
+                    ->searchable()
                     ->sortable(),
                 TextColumn::make('email')
                     ->label('Correo')
