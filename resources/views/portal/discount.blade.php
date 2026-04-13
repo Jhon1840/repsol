@@ -178,7 +178,7 @@
             @endif
 
             <div class="rider-admin-link">
-                <a href="{{ route('portal.index') }}">Volver a consulta de puntos</a>
+                <a href="{{ url('/consulta-puntos/') }}">Volver a saldo rider</a>
             </div>
         </article>
     </section>

@@ -42,7 +42,7 @@ class AdminPanelProvider extends PanelProvider
                 fn (): string => view('partials.session-refresh-script')->render(),
             )
             ->navigationItems([
-                NavigationItem::make('Consulta de puntos')
+                NavigationItem::make('Saldo rider')
                     ->icon(Heroicon::OutlinedMagnifyingGlass)
                     ->url('/consulta-puntos/', shouldOpenInNewTab: true)
                     ->sort(2),
