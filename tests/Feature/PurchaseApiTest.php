@@ -34,7 +34,7 @@ class PurchaseApiTest extends TestCase
         $response
             ->assertCreated()
             ->assertJson([
-                'rider_code' => 'SC00065',
+                'rider_code' => 'PYASC00065',
                 'product_code' => 'RPP2065THC',
                 'points' => 2400,
             ]);
@@ -50,7 +50,7 @@ class PurchaseApiTest extends TestCase
         $movement = $rider->movements()->firstOrFail();
 
         $this->assertSame('api_purchase', $movement->metadata['source']);
-        $this->assertSame('SC00065', $movement->metadata['rider_code']);
+        $this->assertSame('PYASC00065', $movement->metadata['rider_code']);
         $this->assertSame('RPP2065THC', $movement->metadata['product_code']);
 
         $rider->loadSum('movements as points_balance', 'points');

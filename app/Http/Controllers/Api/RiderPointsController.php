@@ -11,9 +11,9 @@ class RiderPointsController extends Controller
 {
     public function show(Request $request, string $riderId): JsonResponse
     {
-        $normalizedRiderId = strtoupper(trim($riderId));
+        $normalizedRiderId = Rider::normalizeRiderId($riderId);
 
-        if ($normalizedRiderId === '') {
+        if ($normalizedRiderId === null) {
             return $this->corsResponse([
                 'message' => 'El ID de rider es obligatorio.',
             ], 422);

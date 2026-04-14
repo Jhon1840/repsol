@@ -313,7 +313,7 @@ class ExcelRiderImportService
     protected function resolveRider(array $parsedRider, ?Rider $targetRider): Rider
     {
         if ($targetRider) {
-            if ($parsedRider['rider_id'] !== $targetRider->rider_id) {
+            if (Rider::normalizeRiderId($parsedRider['rider_id']) !== $targetRider->rider_id) {
                 throw ValidationException::withMessages([
                     'excel' => ['El Excel contiene filas de otro rider y no coincide con el rider actual.'],
                 ]);
@@ -453,7 +453,7 @@ class ExcelRiderImportService
     {
         $value = $this->stringValue($value);
 
-        return $value !== null ? strtoupper($value) : null;
+        return $value !== null ? Rider::normalizeRiderId($value) : null;
     }
 
     protected function normalizeProductCode(mixed $value): ?string

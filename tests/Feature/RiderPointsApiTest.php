@@ -44,7 +44,7 @@ class RiderPointsApiTest extends TestCase
             ->assertHeader('Access-Control-Allow-Origin', '*')
             ->assertJson([
                 'rider' => [
-                    'rider_id' => 'SC00065',
+                    'rider_id' => 'PYASC00065',
                     'name' => 'Sandra Parada',
                     'branch' => 'CENTRAL',
                     'rango' => 'DIAMANTE',

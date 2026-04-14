@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Filament\Pages\Dashboard;
+use App\Filament\Resources\Riders\Pages\ListRiders;
 use App\Models\Rider;
 use App\Models\RiderMovement;
 use App\Models\User;
@@ -249,5 +250,24 @@ class BranchManagerScopeTest extends TestCase
 
         $this->assertTrue($withBranch->canAccessPanel(filament()->getDefaultPanel()));
         $this->assertFalse($withoutBranch->canAccessPanel(filament()->getDefaultPanel()));
+    }
+
+    public function test_non_admin_users_cannot_trigger_excel_upload_from_dashboard_or_riders_list(): void
+    {
+        $user = User::query()->create([
+            'name' => 'Marketing Sin Excel',
+            'email' => 'marketing-no-excel@example.com',
+            'password' => 'password',
+            'role' => User::ROLE_MARKETING,
+            'branch' => 'SANTA CRUZ',
+        ]);
+
+        $this->actingAs($user);
+
+        app(Dashboard::class)->storeExcel();
+        app(ListRiders::class)->storeExcel();
+
+        $this->assertDatabaseCount('uploaded_documents', 0);
+        $this->assertDatabaseCount('rider_movements', 0);
     }
 }

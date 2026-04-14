@@ -76,83 +76,86 @@
                     <input type="hidden" name="rider_id" value="{{ old('rider_id', $rider->rider_id) }}">
 
                     <div class="rider-form-group">
-                        <label for="points">Puntos a descontar</label>
-                        <input
-                            id="points"
-                            name="points"
-                            type="number"
-                            min="1"
-                            step="1"
-                            value="{{ old('points') }}"
-                            placeholder="Ej: 50"
-                            required
-                        >
-                    </div>
-
-                    @error('points')
-                        <div class="rider-error-message">
-                            {{ $message }}
-                        </div>
-                    @enderror
-
-                    <div class="rider-form-group">
                         <label for="articulos">Qué compró o canjeó</label>
-                        <details class="rider-multiselect" data-multiselect>
-                            <summary class="rider-multiselect-summary">
-                                <span class="rider-multiselect-label" data-multiselect-label>
-                                    {{ $selectedNombres->isNotEmpty() ? $selectedNombres->implode(', ') : 'Selecciona uno o más artículos' }}
-                                </span>
-                                <span class="rider-multiselect-arrow" aria-hidden="true">▾</span>
-                            </summary>
+                        @if (blank($rider->rango))
+                            <div class="rider-error-message">
+                                El rider no tiene rango asignado para calcular el coste de los artículos.
+                            </div>
+                        @elseif ($articulos->isEmpty())
+                            <div class="rider-error-message">
+                                No hay artículos con coste configurado para el rango {{ $rider->rango }}.
+                            </div>
+                        @else
+                            <details class="rider-multiselect" data-multiselect>
+                                <summary class="rider-multiselect-summary">
+                                    <span class="rider-multiselect-label" data-multiselect-label>
+                                        {{ $selectedNombres->isNotEmpty() ? $selectedNombres->implode(', ') : 'Selecciona uno o más artículos' }}
+                                    </span>
+                                    <span class="rider-multiselect-arrow" aria-hidden="true">▾</span>
+                                </summary>
 
-                            <div class="rider-multiselect-menu">
-                                @foreach ($articulos as $articulo)
-                                    @php
-                                        $articleId = (string) $articulo->id;
-                                        $isSelected = $selectedArticulos->has($articleId);
-                                        $quantity = $isSelected ? $selectedArticulos->get($articleId, 1) : 0;
-                                    @endphp
+                                <div class="rider-multiselect-menu">
+                                    @foreach ($articulos as $articulo)
+                                        @php
+                                            $articleId = (string) $articulo->id;
+                                            $isSelected = $selectedArticulos->has($articleId);
+                                            $quantity = $isSelected ? $selectedArticulos->get($articleId, 1) : 0;
+                                            $pointsPerUnit = (int) ($articulo->pointCosts->first()?->points ?? 0);
+                                        @endphp
 
-                                    <div class="rider-multiselect-option @if ($isSelected) is-selected @endif" data-article-option>
-                                        <div class="rider-multiselect-choice">
-                                            <span data-article-name>{{ $articulo->nombre }}</span>
-                                        </div>
+                                        <div
+                                            class="rider-multiselect-option @if ($isSelected) is-selected @endif"
+                                            data-article-option
+                                            data-point-cost="{{ $pointsPerUnit }}"
+                                        >
+                                            <div class="rider-multiselect-choice">
+                                                <span data-article-name>{{ $articulo->nombre }}</span>
+                                                <small>{{ number_format($pointsPerUnit) }} puntos c/u</small>
+                                            </div>
 
-                                        <div class="rider-quantity-control" aria-label="Cantidad para {{ $articulo->nombre }}">
-                                            <button
-                                                type="button"
-                                                class="rider-quantity-button"
-                                                data-quantity-step="-1"
+                                            <div class="rider-quantity-control" aria-label="Cantidad para {{ $articulo->nombre }}">
+                                                <button
+                                                    type="button"
+                                                    class="rider-quantity-button"
+                                                    data-quantity-step="-1"
+                                                    @disabled($quantity === 0)
+                                                >
+                                                    -
+                                                </button>
+                                                <span
+                                                    class="rider-quantity-display"
+                                                    data-quantity-display
+                                                >
+                                                    {{ $quantity }}
+                                                </span>
+                                                <button
+                                                    type="button"
+                                                    class="rider-quantity-button"
+                                                    data-quantity-step="1"
+                                                >
+                                                    +
+                                                </button>
+                                            </div>
+
+                                            <span
+                                                class="rider-article-subtotal"
+                                                data-article-subtotal
+                                            >
+                                                {{ number_format($quantity * $pointsPerUnit) }} pts
+                                            </span>
+
+                                            <input
+                                                type="hidden"
+                                                name="articulos[{{ $articulo->id }}]"
+                                                value="{{ $quantity }}"
+                                                data-quantity-field
                                                 @disabled($quantity === 0)
                                             >
-                                                -
-                                            </button>
-                                            <span
-                                                class="rider-quantity-display"
-                                                data-quantity-display
-                                            >
-                                                {{ $quantity }}
-                                            </span>
-                                            <button
-                                                type="button"
-                                                class="rider-quantity-button"
-                                                data-quantity-step="1"
-                                            >
-                                                +
-                                            </button>
                                         </div>
-
-                                        <input
-                                            type="hidden"
-                                            name="articulos[{{ $articulo->id }}]"
-                                            value="{{ $quantity }}"
-                                            data-quantity-field
-                                            @disabled($quantity === 0)
-                                        >
-                                    </div>
-                                @endforeach
-                            </div>
-                        </details>
+                                    @endforeach
+                                </div>
+                            </details>
+                        @endif
                     </div>
 
                     @error('articulos')
@@ -167,12 +170,17 @@
                         </div>
                     @enderror
 
-                    <button type="submit" class="rider-submit-button">
+                    <div class="rider-discount-total" data-discount-total-wrapper>
+                        <span>Total a descontar</span>
+                        <strong><span data-discount-total>0</span> puntos</strong>
+                    </div>
+
+                    <button type="submit" class="rider-submit-button" @disabled(blank($rider->rango) || $articulos->isEmpty())>
                         Descontar puntos
                     </button>
 
                     <div class="rider-example-hint">
-                        <small>Solo se permiten valores enteros y no mayores al saldo actual del rider. Usa + y - para indicar la cantidad de cada artículo.</small>
+                        <small>El total se calcula según el rango actual del rider. Usa + y - para indicar la cantidad de cada artículo.</small>
                     </div>
                 </form>
             @endif
@@ -205,7 +213,9 @@
             multiselects.forEach((multiselect) => {
                 const label = multiselect.querySelector('[data-multiselect-label]');
                 const options = [...multiselect.querySelectorAll('[data-article-option]')];
+                const totalLabel = document.querySelector('[data-discount-total]');
                 const placeholder = 'Selecciona uno o más artículos';
+                const formatter = new Intl.NumberFormat('es-BO');
 
                 const syncLabel = () => {
                     const selected = options
@@ -220,16 +230,32 @@
                     label.textContent = selected.length ? selected.join(', ') : placeholder;
                 };
 
+                const syncTotal = () => {
+                    const total = options.reduce((sum, option) => {
+                        const quantity = Number(option.querySelector('[data-quantity-field]')?.value || 0);
+                        const pointCost = Number(option.dataset.pointCost || 0);
+
+                        return sum + (quantity * pointCost);
+                    }, 0);
+
+                    if (totalLabel) {
+                        totalLabel.textContent = formatter.format(total);
+                    }
+                };
+
                 const syncOption = (option) => {
                     const field = option.querySelector('[data-quantity-field]');
                     const display = option.querySelector('[data-quantity-display]');
                     const minusButton = option.querySelector('[data-quantity-step="-1"]');
+                    const subtotal = option.querySelector('[data-article-subtotal]');
                     const quantity = Number(field.value || 0);
+                    const pointCost = Number(option.dataset.pointCost || 0);
                     const isSelected = quantity > 0;
 
                     field.disabled = ! isSelected;
                     minusButton.disabled = ! isSelected;
                     display.textContent = String(quantity);
+                    subtotal.textContent = `${formatter.format(quantity * pointCost)} pts`;
                     option.classList.toggle('is-selected', isSelected);
                 };
 
@@ -244,6 +270,7 @@
                             field.value = String(nextQuantity);
                             syncOption(option);
                             syncLabel();
+                            syncTotal();
                         });
                     });
 
@@ -251,6 +278,7 @@
                 });
 
                 syncLabel();
+                syncTotal();
             });
         })();
     </script>

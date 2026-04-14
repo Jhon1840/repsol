@@ -21,9 +21,16 @@ class RiderForm
                         TextInput::make('rider_id')
                             ->label('ID')
                             ->required()
+                            ->default(fn (string $operation): ?string => $operation === 'create' ? Rider::RIDER_ID_PREFIX : null)
+                            ->dehydrateStateUsing(fn (mixed $state): ?string => Rider::normalizeRiderId($state))
+                            ->rules([
+                                fn (): \Closure => fn (string $attribute, mixed $value, \Closure $fail) => Rider::normalizeRiderId($value) === Rider::RIDER_ID_PREFIX
+                                    ? $fail('El ID debe incluir números o letras después de PYA.')
+                                    : null,
+                            ])
                             ->unique(ignoreRecord: true)
                             ->maxLength(255)
-                            ->placeholder('SC00065'),
+                            ->placeholder('PYA12647'),
                         TextInput::make('name')
                             ->label('Nombre')
                             ->required()

@@ -10,6 +10,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Rider extends Model
 {
+    public const RIDER_ID_PREFIX = 'PYA';
+
     public const RANGO_OPTIONS = [
         'DIAMANTE' => 'Diamante',
         'BRONCE' => 'Bronce',
@@ -52,6 +54,29 @@ class Rider extends Model
         return 'rider_id';
     }
 
+    public static function normalizeRiderId(mixed $value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        $normalized = strtoupper(trim((string) $value));
+
+        if ($normalized === '') {
+            return null;
+        }
+
+        if (str_starts_with($normalized, self::RIDER_ID_PREFIX)) {
+            return $normalized;
+        }
+
+        if (str_starts_with($normalized, 'PY')) {
+            return self::RIDER_ID_PREFIX.substr($normalized, 2);
+        }
+
+        return self::RIDER_ID_PREFIX.$normalized;
+    }
+
     public function scopeWithPointsBalance(Builder $query, ?User $user = null): Builder
     {
         return $query->withSum('movements as points_balance', 'points');
@@ -70,6 +95,13 @@ class Rider extends Model
     {
         return Attribute::make(
             get: fn (?int $value, array $attributes): int => (int) ($attributes['points_balance'] ?? $this->movements()->sum('points')),
+        );
+    }
+
+    protected function riderId(): Attribute
+    {
+        return Attribute::make(
+            set: fn (mixed $value): ?string => self::normalizeRiderId($value),
         );
     }
 }

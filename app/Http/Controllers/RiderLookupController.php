@@ -15,13 +15,13 @@ class RiderLookupController extends Controller
     public function discountForm(Request $request): View|RedirectResponse
     {
         $rider = null;
-        $riderId = trim($request->string('rider_id')->toString());
+        $riderId = Rider::normalizeRiderId($request->string('rider_id')->toString());
 
-        if (filled($riderId)) {
+        if ($riderId !== null) {
             $rider = Rider::query()
                 ->visibleTo(auth()->user())
                 ->withPointsBalance(auth()->user())
-                ->where('rider_id', strtoupper($riderId))
+                ->where('rider_id', $riderId)
                 ->first();
 
             if (! $rider) {
@@ -36,6 +36,14 @@ class RiderLookupController extends Controller
 
         return view('portal.discount', [
             'articulos' => Articulos::query()
+                ->when($rider?->rango, fn ($query) => $query->whereHas(
+                    'pointCosts',
+                    fn ($costQuery) => $costQuery->where('rango', $rider->rango),
+                ))
+                ->with(['pointCosts' => fn ($query) => $query->when(
+                    $rider?->rango,
+                    fn ($costQuery) => $costQuery->where('rango', $rider->rango),
+                )])
                 ->orderBy('nombre')
                 ->get(['id', 'nombre']),
             'rider' => $rider,
@@ -46,7 +54,6 @@ class RiderLookupController extends Controller
     {
         $validated = $request->validate([
             'rider_id' => ['required', 'string', 'max:255'],
-            'points' => ['required', 'integer', 'min:1'],
             'articulos' => ['required', 'array', 'min:1'],
             'articulos.*' => ['integer', 'min:1'],
         ]);
@@ -54,7 +61,7 @@ class RiderLookupController extends Controller
         $rider = Rider::query()
             ->visibleTo(auth()->user())
             ->withPointsBalance(auth()->user())
-            ->where('rider_id', strtoupper(trim($validated['rider_id'])))
+            ->where('rider_id', Rider::normalizeRiderId($validated['rider_id']))
             ->first();
 
         if (! $rider) {
@@ -66,16 +73,24 @@ class RiderLookupController extends Controller
         }
 
         $availablePoints = (int) $rider->points_balance;
-        $pointsToDiscount = (int) $validated['points'];
         $selectedArticleQuantities = collect($validated['articulos'])
             ->mapWithKeys(fn (mixed $quantity, string | int $id): array => [(int) $id => (int) $quantity])
             ->filter(fn (int $quantity, int $id): bool => $id > 0 && $quantity > 0);
+
+        if (blank($rider->rango)) {
+            return back()
+                ->withInput()
+                ->withErrors([
+                    'articulos' => 'El rider no tiene rango asignado para calcular el coste de los artículos.',
+                ]);
+        }
 
         $selectedArticleIds = $selectedArticleQuantities
             ->keys()
             ->values();
 
         $selectedArticles = Articulos::query()
+            ->with(['pointCosts' => fn ($query) => $query->where('rango', $rider->rango)])
             ->whereIn('id', $selectedArticleIds)
             ->get(['id', 'nombre']);
 
@@ -91,6 +106,7 @@ class RiderLookupController extends Controller
                     'id' => $id,
                     'nombre' => $article->nombre,
                     'quantity' => $selectedArticleQuantities->get($id),
+                    'points_per_unit' => $article->pointCosts->first()?->points,
                 ];
             })
             ->filter()
@@ -103,6 +119,27 @@ class RiderLookupController extends Controller
                     'articulos' => 'Debes seleccionar al menos un artículo válido.',
                 ]);
         }
+
+        $articlesWithoutCost = $selectedArticleDetails
+            ->filter(fn (array $article): bool => blank($article['points_per_unit']))
+            ->pluck('nombre');
+
+        if ($articlesWithoutCost->isNotEmpty()) {
+            return back()
+                ->withInput()
+                ->withErrors([
+                    'articulos' => 'No hay coste configurado para el rango '.$rider->rango.' en: '.$articlesWithoutCost->implode(', ').'.',
+                ]);
+        }
+
+        $selectedArticleDetails = $selectedArticleDetails
+            ->map(function (array $article): array {
+                $article['points_subtotal'] = $article['quantity'] * $article['points_per_unit'];
+
+                return $article;
+            });
+
+        $pointsToDiscount = (int) $selectedArticleDetails->sum('points_subtotal');
 
         $redemptionDescription = $selectedArticleDetails
             ->map(fn (array $article): string => "{$article['quantity']} x {$article['nombre']}")
@@ -129,10 +166,17 @@ class RiderLookupController extends Controller
                 'source' => 'portal_points_discount',
                 'actor_type' => 'user',
                 'discounted_points' => $pointsToDiscount,
+                'rango' => $rider->rango,
                 'selected_article_ids' => $selectedArticleIds->all(),
                 'selected_article_names' => $selectedArticleDetails->pluck('nombre')->all(),
                 'selected_article_quantities' => $selectedArticleDetails
                     ->mapWithKeys(fn (array $article): array => [$article['id'] => $article['quantity']])
+                    ->all(),
+                'selected_article_points_per_unit' => $selectedArticleDetails
+                    ->mapWithKeys(fn (array $article): array => [$article['id'] => $article['points_per_unit']])
+                    ->all(),
+                'selected_article_points_subtotals' => $selectedArticleDetails
+                    ->mapWithKeys(fn (array $article): array => [$article['id'] => $article['points_subtotal']])
                     ->all(),
                 'selected_articles' => $selectedArticleDetails->all(),
                 'previous_points_balance' => $availablePoints,

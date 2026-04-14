@@ -4,52 +4,52 @@
     @php($lastEditorLabel = $record->editor?->name)
     @php($relatedDocuments = $this->getRelatedDocuments())
 
-    <div class="grid min-w-0 gap-6 overflow-hidden">
+    <div class="grid min-w-0 gap-6">
         <section class="min-w-0 rounded-2xl border border-slate-200/70 bg-white/95 p-5 shadow-sm dark:border-slate-800 dark:bg-slate-950/90 sm:p-6">
-            <div class="grid gap-4 md:grid-cols-4 xl:grid-cols-8">
+            <div class="grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(min(100%,11rem),1fr))]">
                 <div class="min-w-0">
-                    <p class="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">ID</p>
-                    <p class="mt-2 truncate text-lg font-semibold text-slate-950 dark:text-white">{{ $record->rider_id }}</p>
+                    <p class="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500 lg:tracking-[0.24em]">ID</p>
+                    <p class="mt-2 break-words text-lg font-semibold text-slate-950 dark:text-white">{{ $record->rider_id }}</p>
                 </div>
 
                 <div class="min-w-0">
-                    <p class="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Nombre</p>
-                    <p class="mt-2 truncate text-lg font-semibold text-slate-950 dark:text-white">{{ $record->name }}</p>
+                    <p class="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500 lg:tracking-[0.24em]">Nombre</p>
+                    <p class="mt-2 break-words text-lg font-semibold text-slate-950 dark:text-white">{{ $record->name }}</p>
                 </div>
 
                 <div class="min-w-0">
-                    <p class="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Sucursal</p>
-                    <p class="mt-2 truncate text-lg font-semibold text-slate-950 dark:text-white">{{ $record->branch ?? 'Sin sucursal' }}</p>
+                    <p class="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500 lg:tracking-[0.24em]">Sucursal</p>
+                    <p class="mt-2 break-words text-lg font-semibold text-slate-950 dark:text-white">{{ $record->branch ?? 'Sin sucursal' }}</p>
                 </div>
 
                 <div class="min-w-0">
-                    <p class="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Rango</p>
-                    <p class="mt-2 truncate text-lg font-semibold text-slate-950 dark:text-white">{{ $record->rango ?? 'Sin rango' }}</p>
+                    <p class="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500 lg:tracking-[0.24em]">Rango</p>
+                    <p class="mt-2 break-words text-lg font-semibold text-slate-950 dark:text-white">{{ $record->rango ?? 'Sin rango' }}</p>
                 </div>
 
                 <div class="min-w-0">
-                    <p class="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Puntos acumulados</p>
+                    <p class="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500 lg:tracking-[0.24em]">Puntos acumulados</p>
                     <p class="mt-2 text-3xl font-semibold text-[#C12A3A] dark:text-[#F0D98A]">{{ number_format((int) $record->points_balance) }}</p>
                 </div>
 
                 <div class="min-w-0">
-                    <p class="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Creado por</p>
-                    <p class="mt-2 truncate text-lg font-semibold text-slate-950 dark:text-white">{{ $creationLabel }}</p>
+                    <p class="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500 lg:tracking-[0.24em]">Creado por</p>
+                    <p class="mt-2 break-words text-lg font-semibold text-slate-950 dark:text-white">{{ $creationLabel }}</p>
                 </div>
 
                 <div class="min-w-0">
-                    <p class="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Fecha de creación</p>
-                    <p class="mt-2 truncate text-lg font-semibold text-slate-950 dark:text-white">{{ optional($record->created_at)->format('d/m/Y H:i') ?? '-' }}</p>
+                    <p class="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500 lg:tracking-[0.24em]">Fecha de creación</p>
+                    <p class="mt-2 break-words text-lg font-semibold text-slate-950 dark:text-white">{{ optional($record->created_at)->format('d/m/Y H:i') ?? '-' }}</p>
                 </div>
 
                 <div class="min-w-0">
-                    <p class="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Última edición por</p>
-                    <p class="mt-2 truncate text-lg font-semibold text-slate-950 dark:text-white">{{ $lastEditorLabel ?? 'Sin ediciones manuales' }}</p>
+                    <p class="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500 lg:tracking-[0.24em]">Última edición por</p>
+                    <p class="mt-2 break-words text-lg font-semibold text-slate-950 dark:text-white">{{ $lastEditorLabel ?? 'Sin ediciones manuales' }}</p>
                 </div>
 
                 <div class="min-w-0">
-                    <p class="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Última edición</p>
-                    <p class="mt-2 truncate text-lg font-semibold text-slate-950 dark:text-white">
+                    <p class="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500 lg:tracking-[0.24em]">Última edición</p>
+                    <p class="mt-2 break-words text-lg font-semibold text-slate-950 dark:text-white">
                         {{ $lastEditorLabel ? (optional($record->updated_at)->format('d/m/Y H:i') ?? '-') : 'Sin ediciones manuales' }}
                     </p>
                 </div>
@@ -64,9 +64,9 @@
                 </div>
 
                 <div class="overflow-x-auto">
-                    <table class="min-w-[920px] table-fixed divide-y divide-slate-200 text-sm dark:divide-slate-800">
+                    <table class="min-w-[760px] table-fixed divide-y divide-slate-200 text-xs dark:divide-slate-800 lg:min-w-[920px] sm:text-sm">
                         <thead>
-                            <tr class="text-left text-xs uppercase tracking-[0.18em] text-slate-500">
+                            <tr class="text-left text-xs uppercase tracking-[0.1em] text-slate-500 lg:tracking-[0.18em]">
                                 <th class="w-28 pb-3 pr-4">Fecha</th>
                                 <th class="w-36 pb-3 pr-4">Registrado por</th>
                                 <th class="w-28 pb-3 pr-4">Sucursal</th>

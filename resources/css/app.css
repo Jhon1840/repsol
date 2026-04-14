@@ -706,7 +706,7 @@
 
     .rider-multiselect-option {
         display: grid;
-        grid-template-columns: minmax(8rem, 1fr) auto;
+        grid-template-columns: minmax(8rem, 1fr) auto minmax(4.4rem, auto);
         align-items: center;
         gap: 0.7rem;
         padding: 0.65rem 0.7rem;
@@ -737,7 +737,9 @@
 
     .rider-multiselect-choice {
         display: flex;
-        align-items: center;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.12rem;
         min-width: 0;
     }
 
@@ -749,6 +751,23 @@
         text-transform: none;
         font-size: 1rem;
         font-weight: 700;
+    }
+
+    .rider-multiselect-choice small,
+    .rider-article-subtotal {
+        color: rgba(63, 92, 121, 0.72);
+        font-size: 0.78rem;
+        font-weight: 800;
+    }
+
+    .rider-article-subtotal {
+        text-align: right;
+        white-space: nowrap;
+    }
+
+    .dark .rider-multiselect-choice small,
+    .dark .rider-article-subtotal {
+        color: rgba(226, 232, 240, 0.74);
     }
 
     .rider-quantity-control {
@@ -819,6 +838,39 @@
     .dark .rider-quantity-display {
         background: rgba(255, 255, 255, 0.1);
         color: white;
+    }
+
+    .rider-discount-total {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        border: 1px solid rgba(63, 92, 121, 0.14);
+        border-radius: 0.75rem;
+        background: rgba(255, 255, 255, 0.72);
+        padding: 0.9rem 1rem;
+        color: var(--repsol-night);
+    }
+
+    .rider-discount-total span {
+        color: rgba(63, 92, 121, 0.78);
+        font-size: 0.86rem;
+        font-weight: 800;
+    }
+
+    .rider-discount-total strong {
+        font-size: 1.05rem;
+        font-weight: 900;
+    }
+
+    .dark .rider-discount-total {
+        border-color: rgba(148, 163, 184, 0.16);
+        background: rgba(15, 23, 42, 0.78);
+        color: white;
+    }
+
+    .dark .rider-discount-total span {
+        color: rgba(226, 232, 240, 0.74);
     }
 
     .rider-error-message {
@@ -1237,6 +1289,11 @@
         .rider-multiselect-option {
             grid-template-columns: minmax(6rem, 1fr) auto;
             align-items: center;
+        }
+
+        .rider-article-subtotal {
+            grid-column: 1 / -1;
+            text-align: left;
         }
 
         .rider-quantity-control {

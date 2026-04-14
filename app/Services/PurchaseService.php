@@ -16,8 +16,10 @@ class PurchaseService
         int $quantity = 1,
         array $attributes = [],
     ): RiderMovement {
+        $normalizedRiderCode = Rider::normalizeRiderId($riderCode);
+
         $rider = Rider::query()
-            ->where('rider_id', $riderCode)
+            ->where('rider_id', $normalizedRiderCode)
             ->first();
 
         $product = Product::query()
@@ -40,7 +42,7 @@ class PurchaseService
 
         if ($errors !== []) {
             Log::warning('Purchase creation rejected by domain validation.', [
-                'rider_code' => $riderCode,
+                'rider_code' => $normalizedRiderCode,
                 'product_code' => $productCode,
                 'quantity' => $quantity,
                 'errors' => $errors,
@@ -56,7 +58,7 @@ class PurchaseService
 
         $metadata = array_merge([
             'source' => 'api_purchase',
-            'rider_code' => $riderCode,
+            'rider_code' => $normalizedRiderCode,
             'product_code' => $productCode,
             'quantity' => $quantity,
             'points_per_unit' => $pointsPerUnit,

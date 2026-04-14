@@ -31,6 +31,7 @@ class EditRider extends EditRecord
             Action::make('uploadExcel')
                 ->label('Subir Excel')
                 ->icon('heroicon-o-document-arrow-up')
+                ->visible(fn (): bool => auth()->user()?->isAdmin() === true)
                 ->schema([
                     FileUpload::make('excel')
                         ->label('Archivo Excel')
@@ -41,6 +42,15 @@ class EditRider extends EditRecord
                         ->helperText('Se leerá la hoja REPORTE A SUBIR y se calculará puntos como Litros comprados x Puntos por litro del producto.'),
                 ])
                 ->action(function (array $data): void {
+                    if (auth()->user()?->isAdmin() !== true) {
+                        Notification::make()
+                            ->title('No tienes permisos para subir Excel')
+                            ->danger()
+                            ->send();
+
+                        return;
+                    }
+
                     try {
                         $document = app(ExcelRiderImportService::class)->storeAndImportForRider(
                             $data['excel'],

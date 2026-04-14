@@ -87,6 +87,15 @@ class Dashboard extends BaseDashboard
 
     public function storeExcel(): void
     {
+        if (! $this->canUploadExcel()) {
+            Notification::make()
+                ->title('No tienes permisos para subir Excel')
+                ->danger()
+                ->send();
+
+            return;
+        }
+
         $this->validate([
             'pendingExcel' => ['required', 'file', 'mimes:xlsx', 'max:20480'],
         ]);
@@ -144,6 +153,7 @@ class Dashboard extends BaseDashboard
                 ->limit(5)
                 ->get(),
             'pointsChart' => $this->getPointsChartData(),
+            'canUploadExcel' => $this->canUploadExcel(),
         ];
     }
 
@@ -263,5 +273,10 @@ class Dashboard extends BaseDashboard
         }
 
         return "El archivo {$name} procesó {$processedRiders} movimiento(s) por rider/sucursal y sumó {$points} punto(s).";
+    }
+
+    protected function canUploadExcel(): bool
+    {
+        return auth()->user()?->isAdmin() === true;
     }
 }

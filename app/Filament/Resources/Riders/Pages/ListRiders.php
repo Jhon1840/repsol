@@ -30,6 +30,15 @@ class ListRiders extends ListRecords
 
     public function storeExcel(): void
     {
+        if (! $this->canUploadExcel()) {
+            Notification::make()
+                ->title('No tienes permisos para subir Excel')
+                ->danger()
+                ->send();
+
+            return;
+        }
+
         $this->validate([
             'pendingExcel' => ['required', 'file', 'mimes:xlsx', 'max:20480'],
         ]);
@@ -81,6 +90,7 @@ class ListRiders extends ListRecords
                 ->latest('uploaded_at')
                 ->limit(5)
                 ->get(),
+            'canUploadExcel' => $this->canUploadExcel(),
         ]);
     }
 
@@ -122,5 +132,10 @@ class ListRiders extends ListRecords
         }
 
         return "El archivo {$name} procesó {$processedRiders} movimiento(s) por rider/sucursal y sumó {$points} punto(s).";
+    }
+
+    protected function canUploadExcel(): bool
+    {
+        return auth()->user()?->isAdmin() === true;
     }
 }

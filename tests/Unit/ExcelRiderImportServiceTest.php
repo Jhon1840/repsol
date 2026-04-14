@@ -37,15 +37,15 @@ class ExcelRiderImportServiceTest extends TestCase
         $parsed = $service->extractImportData($path);
 
         $this->assertCount(3, $parsed['parsed_riders']);
-        $this->assertSame('SC00065', $parsed['parsed_riders'][0]['rider_id']);
+        $this->assertSame('PYASC00065', $parsed['parsed_riders'][0]['rider_id']);
         $this->assertSame('CENTRAL', $parsed['parsed_riders'][0]['branch']);
         $this->assertSame(300.0, $parsed['parsed_riders'][0]['points_total']);
         $this->assertSame('Sandra Parada', $parsed['parsed_riders'][0]['rider_name']);
         $this->assertSame(['RPP001'], $parsed['parsed_riders'][0]['article_codes']);
-        $this->assertSame('SC00065', $parsed['parsed_riders'][1]['rider_id']);
+        $this->assertSame('PYASC00065', $parsed['parsed_riders'][1]['rider_id']);
         $this->assertSame('NORTE', $parsed['parsed_riders'][1]['branch']);
         $this->assertSame(120.0, $parsed['parsed_riders'][1]['points_total']);
-        $this->assertSame('SC00081', $parsed['parsed_riders'][2]['rider_id']);
+        $this->assertSame('PYASC00081', $parsed['parsed_riders'][2]['rider_id']);
         $this->assertSame('SUR', $parsed['parsed_riders'][2]['branch']);
         $this->assertSame(240.0, $parsed['parsed_riders'][2]['points_total']);
         $this->assertSame('Jorge Mamani', $parsed['parsed_riders'][2]['rider_name']);
@@ -80,13 +80,13 @@ class ExcelRiderImportServiceTest extends TestCase
         $this->assertCount(2, $document->metadata['processed_items']);
 
         $this->assertDatabaseHas('riders', [
-            'rider_id' => 'SC00099',
+            'rider_id' => 'PYASC00099',
             'name' => 'Nuevo Rider',
             'branch' => 'NORTE',
         ]);
 
-        $existingRider = Rider::query()->where('rider_id', 'SC00065')->firstOrFail();
-        $newRider = Rider::query()->where('rider_id', 'SC00099')->firstOrFail();
+        $existingRider = Rider::query()->where('rider_id', 'PYASC00065')->firstOrFail();
+        $newRider = Rider::query()->where('rider_id', 'PYASC00099')->firstOrFail();
 
         $this->assertDatabaseHas('rider_movements', [
             'rider_id' => $existingRider->getKey(),
@@ -120,7 +120,7 @@ class ExcelRiderImportServiceTest extends TestCase
         $parsed = $service->extractImportData($path);
 
         $this->assertCount(1, $parsed['parsed_riders']);
-        $this->assertSame('PY12702330', $parsed['parsed_riders'][0]['rider_id']);
+        $this->assertSame('PYA12702330', $parsed['parsed_riders'][0]['rider_id']);
         $this->assertNull($parsed['parsed_riders'][0]['branch']);
         $this->assertSame(12000.0, $parsed['parsed_riders'][0]['points_total']);
         $this->assertSame([], $parsed['skipped_items']);
@@ -141,7 +141,7 @@ class ExcelRiderImportServiceTest extends TestCase
         $parsed = $service->extractImportData($path, 'SANTA CRUZ');
 
         $this->assertCount(1, $parsed['parsed_riders']);
-        $this->assertSame('SCZ001', $parsed['parsed_riders'][0]['rider_id']);
+        $this->assertSame('PYASCZ001', $parsed['parsed_riders'][0]['rider_id']);
         $this->assertSame(1200.0, $parsed['parsed_riders'][0]['points_total']);
         $this->assertCount(1, $parsed['skipped_items']);
         $this->assertSame('La fila pertenece a otra sucursal.', $parsed['skipped_items'][0]['reason']);
