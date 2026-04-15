@@ -20,7 +20,7 @@
                         name="rider_id"
                         type="text"
                         value="{{ old('rider_id') }}"
-                        placeholder="Ej: SC00065"
+                        placeholder="Ej: PYA00065"
                         autocomplete="off"
                         required
                     >
@@ -36,9 +36,6 @@
                     Consultar Puntos
                 </button>
 
-                <div class="rider-example-hint">
-                    <small>Ejemplos de IDs válidos: SC00065, SC00081, SC00102</small>
-                </div>
             </form>
 
         </article>

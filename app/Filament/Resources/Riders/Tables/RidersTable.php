@@ -42,8 +42,29 @@ class RidersTable
                     ->state(fn ($record): int => $record->points_balance)
                     ->alignEnd()
                     ->sortable(query: fn ($query, string $direction) => $query->withPointsBalance(auth()->user())->orderBy('points_balance', $direction)),
+                TextColumn::make('updated_at')
+                    ->label('Ultima edicion')
+                    ->dateTime('d/m/Y H:i')
+                    ->sortable()
+                    ->toggleable(),
             ])
             ->filters([
+                SelectFilter::make('updated_at_sort')
+                    ->label('Ordenar por ultima edicion')
+                    ->options([
+                        'desc' => 'Mas recientes primero',
+                        'asc' => 'Mas antiguas primero',
+                    ])
+                    ->native(false)
+                    ->query(function (Builder $query, array $data): Builder {
+                        $direction = $data['value'] ?? null;
+
+                        if (! in_array($direction, ['asc', 'desc'], true)) {
+                            return $query;
+                        }
+
+                        return $query->reorder('updated_at', $direction);
+                    }),
                 SelectFilter::make('branch')
                     ->label('Sucursal')
                     ->options(fn (): array => self::branchOptions())

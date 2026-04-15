@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\ArticuloPointCost;
 use App\Models\Articulos;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 
 class ArticulosSeeder extends Seeder
 {
@@ -13,34 +14,65 @@ class ArticulosSeeder extends Seeder
      */
     public function run(): void
     {
-        foreach ($this->articulos() as $articulo) {
-            Articulos::query()->updateOrCreate(
-                ['nombre' => $articulo['nombre']],
-                ['descripcion' => $articulo['descripcion']],
-            );
-        }
-
-        $articulos = Articulos::query()
-            ->whereIn('nombre', array_keys($this->pointCosts()))
-            ->pluck('id', 'nombre');
-
-        foreach ($this->pointCosts() as $articleName => $costsByRango) {
-            $articuloId = $articulos->get($articleName);
-
-            if (! $articuloId) {
-                continue;
+        DB::transaction(function (): void {
+            foreach ($this->articulos() as $articulo) {
+                $this->seedArticulo($articulo);
             }
 
-            foreach ($costsByRango as $rango => $points) {
+            foreach ($this->pointCosts() as $articleName => $costsByRango) {
+                $articulo = $this->seedArticulo([
+                    'nombre' => $articleName,
+                    'descripcion' => null,
+                ]);
+
+                foreach ($costsByRango as $rango => $points) {
+                    ArticuloPointCost::query()->updateOrCreate(
+                        [
+                            'articulo_id' => $articulo->id,
+                            'rango' => $rango,
+                        ],
+                        ['points' => $points],
+                    );
+                }
+            }
+        });
+    }
+
+    /**
+     * @param  array{nombre: string, descripcion: ?string}  $data
+     */
+    protected function seedArticulo(array $data): Articulos
+    {
+        $articulos = Articulos::query()
+            ->where('nombre', $data['nombre'])
+            ->orderBy('id')
+            ->get();
+
+        $articulo = $articulos->first();
+
+        if (! $articulo) {
+            return Articulos::query()->create($data);
+        }
+
+        $articulo->fill([
+            'descripcion' => $data['descripcion'] ?? $articulo->descripcion,
+        ])->save();
+
+        foreach ($articulos->skip(1) as $duplicate) {
+            foreach ($duplicate->pointCosts as $pointCost) {
                 ArticuloPointCost::query()->updateOrCreate(
                     [
-                        'articulo_id' => $articuloId,
-                        'rango' => $rango,
+                        'articulo_id' => $articulo->id,
+                        'rango' => $pointCost->rango,
                     ],
-                    ['points' => $points],
+                    ['points' => $pointCost->points],
                 );
             }
+
+            $duplicate->delete();
         }
+
+        return $articulo;
     }
 
     /**

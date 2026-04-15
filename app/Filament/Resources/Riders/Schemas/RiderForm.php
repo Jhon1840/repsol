@@ -7,6 +7,7 @@ use App\Models\User;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 
 class RiderForm
@@ -21,16 +22,22 @@ class RiderForm
                         TextInput::make('rider_id')
                             ->label('ID')
                             ->required()
-                            ->default(fn (string $operation): ?string => $operation === 'create' ? Rider::RIDER_ID_PREFIX : null)
+                            ->prefix(Rider::RIDER_ID_PREFIX)
+                            ->formatStateUsing(fn (mixed $state): ?string => Rider::riderIdSuffix($state))
+                            ->afterStateUpdated(function (Set $set, mixed $state): void {
+                                $set('rider_id', Rider::riderIdSuffix($state));
+                            })
                             ->dehydrateStateUsing(fn (mixed $state): ?string => Rider::normalizeRiderId($state))
+                            ->mutateStateForValidationUsing(fn (mixed $state): ?string => Rider::normalizeRiderId($state))
                             ->rules([
                                 fn (): \Closure => fn (string $attribute, mixed $value, \Closure $fail) => Rider::normalizeRiderId($value) === Rider::RIDER_ID_PREFIX
                                     ? $fail('El ID debe incluir números o letras después de PYA.')
                                     : null,
                             ])
                             ->unique(ignoreRecord: true)
+                            ->live(onBlur: true)
                             ->maxLength(255)
-                            ->placeholder('PYA12647'),
+                            ->placeholder('12647'),
                         TextInput::make('name')
                             ->label('Nombre')
                             ->required()

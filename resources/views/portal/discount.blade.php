@@ -34,7 +34,7 @@
                         name="rider_id"
                         type="text"
                         value="{{ old('rider_id', request('rider_id')) }}"
-                        placeholder="Ej: SC00065"
+                        placeholder="Ej: PYA00065"
                         autocomplete="off"
                         required
                     >

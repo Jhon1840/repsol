@@ -7,12 +7,14 @@ use App\Models\Rider;
 use App\Models\RiderMovement;
 use App\Models\UploadedDocument;
 use App\Services\ExcelRiderImportService;
+use Filament\Actions\Action;
 use Filament\Actions\CreateAction;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ListRecords;
 use Illuminate\Contracts\View\View;
 use Illuminate\Validation\ValidationException;
 use Livewire\WithFileUploads;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ListRiders extends ListRecords
 {
@@ -77,8 +79,65 @@ class ListRiders extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
+            Action::make('exportRiders')
+                ->label('Exportar riders')
+                ->icon('heroicon-o-arrow-down-tray')
+                ->color('gray')
+                ->visible(fn (): bool => auth()->user()?->isAdmin() === true)
+                ->action(fn (): StreamedResponse => $this->exportRiders()),
             CreateAction::make()->label('Crear rider'),
         ];
+    }
+
+    public function exportRiders(): StreamedResponse
+    {
+        abort_unless(auth()->user()?->isAdmin() === true, 403);
+
+        $filename = 'riders-'.now()->format('Y-m-d-His').'.csv';
+
+        return response()->streamDownload(function (): void {
+            $handle = fopen('php://output', 'w');
+
+            fwrite($handle, "\xEF\xBB\xBF");
+
+            fputcsv($handle, [
+                'ID',
+                'Nombre',
+                'Sucursal',
+                'Rango',
+                'Puntos',
+                'Origen',
+                'Creado por',
+                'Editado por',
+                'Fecha de creacion',
+                'Ultima edicion',
+            ]);
+
+            Rider::query()
+                ->with(['creator', 'editor'])
+                ->withPointsBalance()
+                ->orderBy('updated_at', 'desc')
+                ->chunk(500, function ($riders) use ($handle): void {
+                    foreach ($riders as $rider) {
+                        fputcsv($handle, [
+                            $rider->rider_id,
+                            $rider->name,
+                            $rider->branch,
+                            $rider->rango,
+                            (int) $rider->points_balance,
+                            $rider->creation_source,
+                            $rider->creator?->email ?? $rider->creator?->name,
+                            $rider->editor?->email ?? $rider->editor?->name,
+                            $rider->created_at?->format('d/m/Y H:i'),
+                            $rider->updated_at?->format('d/m/Y H:i'),
+                        ]);
+                    }
+                });
+
+            fclose($handle);
+        }, $filename, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+        ]);
     }
 
     public function getHeader(): ?View

@@ -15,6 +15,9 @@ class RiderTest extends TestCase
         $this->assertSame('PYA12647', Rider::normalizeRiderId('PY12647'));
         $this->assertSame('PYA12647', Rider::normalizeRiderId('PYA12647'));
         $this->assertSame('PYASC00065', Rider::normalizeRiderId('SC00065'));
+        $this->assertSame('12647', Rider::riderIdSuffix('PYA12647'));
+        $this->assertSame('12647', Rider::riderIdSuffix('PY12647'));
+        $this->assertSame('SC00065', Rider::riderIdSuffix('SC00065'));
 
         $rider = Rider::query()->create([
             'rider_id' => 'PY12647',

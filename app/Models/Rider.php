@@ -77,6 +77,29 @@ class Rider extends Model
         return self::RIDER_ID_PREFIX.$normalized;
     }
 
+    public static function riderIdSuffix(mixed $value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        $normalized = strtoupper(trim((string) $value));
+
+        if ($normalized === '') {
+            return null;
+        }
+
+        if (str_starts_with($normalized, self::RIDER_ID_PREFIX)) {
+            return substr($normalized, strlen(self::RIDER_ID_PREFIX)) ?: null;
+        }
+
+        if (str_starts_with($normalized, 'PY')) {
+            return substr($normalized, 2) ?: null;
+        }
+
+        return $normalized;
+    }
+
     public function scopeWithPointsBalance(Builder $query, ?User $user = null): Builder
     {
         return $query->withSum('movements as points_balance', 'points');
