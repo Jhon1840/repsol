@@ -14,6 +14,8 @@ use Filament\Resources\Pages\ListRecords;
 use Illuminate\Contracts\View\View;
 use Illuminate\Validation\ValidationException;
 use Livewire\WithFileUploads;
+use OpenSpout\Common\Entity\Row;
+use OpenSpout\Writer\XLSX\Writer;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ListRiders extends ListRecords
@@ -93,14 +95,13 @@ class ListRiders extends ListRecords
     {
         abort_unless(auth()->user()?->isAdmin() === true, 403);
 
-        $filename = 'riders-'.now()->format('Y-m-d-His').'.csv';
+        $filename = 'riders-'.now()->format('Y-m-d-His').'.xlsx';
 
         return response()->streamDownload(function (): void {
-            $handle = fopen('php://output', 'w');
+            $writer = new Writer;
+            $writer->openToFile('php://output');
 
-            fwrite($handle, "\xEF\xBB\xBF");
-
-            fputcsv($handle, [
+            $writer->addRow(Row::fromValues([
                 'ID',
                 'Nombre',
                 'Sucursal',
@@ -111,32 +112,32 @@ class ListRiders extends ListRecords
                 'Editado por',
                 'Fecha de creacion',
                 'Ultima edicion',
-            ]);
+            ]));
 
             Rider::query()
                 ->with(['creator', 'editor'])
                 ->withPointsBalance()
                 ->orderBy('updated_at', 'desc')
-                ->chunk(500, function ($riders) use ($handle): void {
+                ->chunk(500, function ($riders) use ($writer): void {
                     foreach ($riders as $rider) {
-                        fputcsv($handle, [
+                        $writer->addRow(Row::fromValues([
                             $rider->rider_id,
                             $rider->name,
                             $rider->branch,
                             $rider->rango,
                             (int) $rider->points_balance,
-                            $rider->creation_source,
-                            $rider->creator?->email ?? $rider->creator?->name,
+                            $rider->creationSourceLabel(),
+                            $rider->creator?->email ?? $rider->creator?->name ?? 'Sistema',
                             $rider->editor?->email ?? $rider->editor?->name,
                             $rider->created_at?->format('d/m/Y H:i'),
                             $rider->updated_at?->format('d/m/Y H:i'),
-                        ]);
+                        ]));
                     }
                 });
 
-            fclose($handle);
+            $writer->close();
         }, $filename, [
-            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         ]);
     }
 

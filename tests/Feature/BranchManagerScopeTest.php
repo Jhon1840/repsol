@@ -90,6 +90,38 @@ class BranchManagerScopeTest extends TestCase
         $this->assertNotContains($laPaz->rider_id, $visibleIds);
     }
 
+    public function test_marketing_global_user_sees_riders_from_all_branches(): void
+    {
+        $user = User::query()->create([
+            'name' => 'Marketing Global',
+            'email' => 'marketing-global@example.com',
+            'password' => 'password',
+            'role' => User::ROLE_MARKETING,
+            'branch' => User::BRANCH_GLOBAL,
+        ]);
+
+        $santaCruz = Rider::query()->create([
+            'rider_id' => 'MKTGLOBALSCZ001',
+            'name' => 'Rider Marketing Global Santa Cruz',
+            'branch' => 'SANTA CRUZ',
+        ]);
+
+        $laPaz = Rider::query()->create([
+            'rider_id' => 'MKTGLOBALLPZ001',
+            'name' => 'Rider Marketing Global La Paz',
+            'branch' => 'LA PAZ',
+        ]);
+
+        $visibleIds = Rider::query()
+            ->visibleTo($user)
+            ->pluck('rider_id')
+            ->all();
+
+        $this->assertContains($santaCruz->rider_id, $visibleIds);
+        $this->assertContains($laPaz->rider_id, $visibleIds);
+        $this->assertNull($user->branchScope());
+    }
+
     public function test_marketing_user_points_balance_is_scoped_to_their_branch(): void
     {
         $user = User::query()->create([
@@ -243,12 +275,18 @@ class BranchManagerScopeTest extends TestCase
             'branch' => 'SANTA CRUZ',
         ]);
 
+        $global = User::query()->make([
+            'role' => User::ROLE_MARKETING,
+            'branch' => User::BRANCH_GLOBAL,
+        ]);
+
         $withoutBranch = User::query()->make([
             'role' => User::ROLE_MARKETING,
             'branch' => null,
         ]);
 
         $this->assertTrue($withBranch->canAccessPanel(filament()->getDefaultPanel()));
+        $this->assertTrue($global->canAccessPanel(filament()->getDefaultPanel()));
         $this->assertFalse($withoutBranch->canAccessPanel(filament()->getDefaultPanel()));
     }
 

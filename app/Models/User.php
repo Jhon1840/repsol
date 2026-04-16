@@ -26,6 +26,8 @@ class User extends Authenticatable implements FilamentUser
         self::ROLE_BRANCH_MANAGER,
     ];
 
+    public const BRANCH_GLOBAL = 'GLOBAL';
+
     public const BRANCH_OPTIONS = [
         'COCHABAMBA' => 'COCHABAMBA',
         'LA PAZ' => 'LA PAZ',
@@ -96,7 +98,7 @@ class User extends Authenticatable implements FilamentUser
 
     public function branchScope(): ?string
     {
-        return $this->hasRiderBranchScopedRole() && filled($this->branch)
+        return $this->hasRiderBranchScopedRole() && filled($this->branch) && $this->branch !== self::BRANCH_GLOBAL
             ? $this->branch
             : null;
     }

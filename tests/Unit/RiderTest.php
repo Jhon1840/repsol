@@ -3,6 +3,7 @@
 namespace Tests\Unit;
 
 use App\Models\Rider;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -28,5 +29,43 @@ class RiderTest extends TestCase
         $this->assertDatabaseHas('riders', [
             'rider_id' => 'PYA12647',
         ]);
+    }
+
+    public function test_creation_source_label_treats_null_creator_as_system(): void
+    {
+        $rider = Rider::query()->create([
+            'rider_id' => 'PYA12702330',
+            'name' => 'Luis Fernando Llancu Vera',
+            'creation_source' => 'manual',
+            'created_by' => null,
+        ]);
+
+        $this->assertSame('Sistema', $rider->creationSourceLabel());
+    }
+
+    public function test_creation_source_label_keeps_manual_when_created_by_user(): void
+    {
+        $user = User::factory()->create();
+
+        $rider = Rider::query()->create([
+            'rider_id' => 'PYA9713129',
+            'name' => 'Franklin Lijeron Contreras',
+            'creation_source' => 'manual',
+            'created_by' => $user->getKey(),
+        ]);
+
+        $this->assertSame('Manual', $rider->creationSourceLabel());
+    }
+
+    public function test_creation_source_label_keeps_excel_origin(): void
+    {
+        $rider = Rider::query()->create([
+            'rider_id' => 'PYA8306521',
+            'name' => 'Ricardo Gabriel Quito Ramos',
+            'creation_source' => 'excel',
+            'created_by' => null,
+        ]);
+
+        $this->assertSame('Excel', $rider->creationSourceLabel());
     }
 }

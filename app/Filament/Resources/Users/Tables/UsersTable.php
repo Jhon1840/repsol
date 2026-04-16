@@ -37,6 +37,7 @@ class UsersTable
                 TextColumn::make('branch')
                     ->label('Sucursal')
                     ->placeholder('Global')
+                    ->formatStateUsing(fn (?string $state): string => $state === User::BRANCH_GLOBAL ? 'Global' : (string) $state)
                     ->badge()
                     ->searchable()
                     ->sortable(),

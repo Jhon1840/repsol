@@ -32,12 +32,32 @@ class UserForm
                             ->required()
                             ->native(false)
                             ->live()
+                            ->afterStateUpdated(function ($state, $set, $get): void {
+                                if ($state === User::ROLE_ADMIN) {
+                                    $set('branch', null);
+
+                                    return;
+                                }
+
+                                if ($state === User::ROLE_MARKETING && blank($get('branch'))) {
+                                    $set('branch', User::BRANCH_GLOBAL);
+
+                                    return;
+                                }
+
+                                if ($state === User::ROLE_BRANCH_MANAGER && $get('branch') === User::BRANCH_GLOBAL) {
+                                    $set('branch', null);
+                                }
+                            })
                             ->default(User::ROLE_MARKETING),
                         Select::make('branch')
                             ->label('Sucursal')
-                            ->options(User::BRANCH_OPTIONS)
+                            ->options(fn ($get): array => $get('role') === User::ROLE_MARKETING
+                                ? [User::BRANCH_GLOBAL => 'Global'] + User::BRANCH_OPTIONS
+                                : User::BRANCH_OPTIONS)
                             ->required(fn ($get): bool => in_array($get('role'), User::RIDER_BRANCH_SCOPED_ROLES, true))
                             ->visible(fn ($get): bool => in_array($get('role'), User::RIDER_BRANCH_SCOPED_ROLES, true))
+                            ->default(User::BRANCH_GLOBAL)
                             ->dehydrated()
                             ->native(false),
                         TextInput::make('email')

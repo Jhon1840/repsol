@@ -114,6 +114,19 @@ class Rider extends Model
         return $query->where('branch', $branch);
     }
 
+    public function creationSourceLabel(): string
+    {
+        if ($this->creation_source === 'excel') {
+            return 'Excel';
+        }
+
+        if ($this->created_by === null) {
+            return 'Sistema';
+        }
+
+        return 'Manual';
+    }
+
     protected function pointsBalance(): Attribute
     {
         return Attribute::make(
