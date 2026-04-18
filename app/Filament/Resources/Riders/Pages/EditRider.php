@@ -98,7 +98,9 @@ class EditRider extends EditRecord
 
     protected function mutateFormDataBeforeSave(array $data): array
     {
-        $this->targetPointsBalance = (int) ($data['points_balance'] ?? $this->record->points_balance);
+        $this->targetPointsBalance = auth()->user()?->isAdmin() === true
+            ? (int) ($data['points_balance'] ?? $this->record->points_balance)
+            : null;
 
         unset($data['points_balance']);
 

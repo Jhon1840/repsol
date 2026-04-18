@@ -62,7 +62,11 @@ class RiderForm
                             ->default(0)
                             ->minValue(0)
                             ->visible(fn (string $operation): bool => $operation === 'edit')
-                            ->helperText('Si cambias este valor, se registrará un ajuste automático de puntos.'),
+                            ->disabled(fn (): bool => auth()->user()?->isAdmin() !== true)
+                            ->dehydrated(fn (): bool => auth()->user()?->isAdmin() === true)
+                            ->helperText(fn (): string => auth()->user()?->isAdmin() === true
+                                ? 'Si cambias este valor, se registrará un ajuste automático de puntos.'
+                                : 'Solo un usuario admin puede editar los puntos.'),
                     ])
                     ->columns(2),
             ]);

@@ -52,7 +52,12 @@
             </form>
 
             @if ($rider)
-                <section id="rider-discount-details" class="rider-discount-summary" aria-label="Datos del rider encontrado">
+                <section
+                    id="rider-discount-details"
+                    class="rider-discount-summary"
+                    aria-label="Datos del rider encontrado"
+                    data-rider-points-balance="{{ (int) $rider->points_balance }}"
+                >
                     <div class="rider-discount-summary-rider">
                         <span class="rider-discount-summary-label">Rider</span>
                         <strong>{{ $rider->name }}</strong>
@@ -209,6 +214,7 @@
             }
 
             const multiselects = document.querySelectorAll('[data-multiselect]');
+            const riderPointsBalance = Number(details?.dataset.riderPointsBalance || 0);
 
             multiselects.forEach((multiselect) => {
                 const label = multiselect.querySelector('[data-multiselect-label]');
@@ -216,6 +222,19 @@
                 const totalLabel = document.querySelector('[data-discount-total]');
                 const placeholder = 'Selecciona uno o más artículos';
                 const formatter = new Intl.NumberFormat('es-BO');
+                const insufficientPointsText = 'El rider no cuenta con puntos suficientes para este descuento.';
+                let wasInsufficient = false;
+
+                const sendInsufficientPointsNotification = () => {
+                    if (! window.FilamentNotification) {
+                        return;
+                    }
+
+                    new window.FilamentNotification()
+                        .title(insufficientPointsText)
+                        .danger()
+                        .send();
+                };
 
                 const syncLabel = () => {
                     const selected = options
@@ -241,6 +260,14 @@
                     if (totalLabel) {
                         totalLabel.textContent = formatter.format(total);
                     }
+
+                    const isInsufficient = total > riderPointsBalance;
+
+                    if (isInsufficient && ! wasInsufficient) {
+                        sendInsufficientPointsNotification();
+                    }
+
+                    wasInsufficient = isInsufficient;
                 };
 
                 const syncOption = (option) => {

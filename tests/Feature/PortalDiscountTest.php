@@ -149,4 +149,64 @@ class PortalDiscountTest extends TestCase
             'movement_type' => 'points_redemption',
         ]);
     }
+
+    public function test_it_warns_when_discount_points_exceed_rider_balance(): void
+    {
+        $user = User::query()->create([
+            'name' => 'Admin',
+            'email' => 'admin-insufficient@example.com',
+            'password' => 'password',
+            'role' => User::ROLE_ADMIN,
+        ]);
+
+        $rider = Rider::query()->create([
+            'rider_id' => 'SC00067',
+            'name' => 'Rider Sin Saldo',
+            'branch' => 'CENTRAL',
+            'rango' => 'ORO',
+        ]);
+
+        RiderMovement::query()->create([
+            'rider_id' => $rider->getKey(),
+            'movement_type' => 'purchase',
+            'points' => 100,
+            'occurred_at' => now(),
+        ]);
+
+        $gorra = Articulos::query()->create(['nombre' => 'Gorra']);
+
+        ArticuloPointCost::query()->create([
+            'articulo_id' => $gorra->getKey(),
+            'rango' => 'ORO',
+            'points' => 300,
+        ]);
+
+        $this->actingAs($user)
+            ->withSession(['_token' => 'test-token'])
+            ->from(route('portal.discount.form', ['rider_id' => 'SC00067']))
+            ->post(route('portal.discount'), [
+                '_token' => 'test-token',
+                'rider_id' => 'SC00067',
+                'articulos' => [
+                    $gorra->getKey() => 1,
+                ],
+            ])
+            ->assertRedirect(route('portal.discount.form', ['rider_id' => 'SC00067']))
+            ->assertSessionHas('filament.notifications', function (array $notifications): bool {
+                return collect($notifications)->contains(
+                    fn (array $notification): bool => $notification['title'] === 'El rider no cuenta con puntos suficientes para este descuento.'
+                        && $notification['status'] === 'danger',
+                );
+            });
+
+        $this->actingAs($user)
+            ->withSession(session()->all())
+            ->get(route('portal.discount.form', ['rider_id' => 'SC00067']))
+            ->assertSee('El rider no cuenta con puntos suficientes para este descuento.');
+
+        $this->assertDatabaseMissing('rider_movements', [
+            'rider_id' => $rider->getKey(),
+            'movement_type' => 'points_redemption',
+        ]);
+    }
 }

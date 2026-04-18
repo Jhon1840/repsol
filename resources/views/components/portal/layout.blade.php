@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ $title ?? 'Consulta de riders' }}</title>
+    @filamentStyles
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     {{-- Theme mode kept for future use.
         <script>
@@ -59,6 +60,9 @@
     @auth
         @include('partials.session-refresh-script')
     @endauth
+
+    @livewire(Filament\Livewire\Notifications::class)
+    @filamentScripts(withCore: true)
 </body>
 </html>
 

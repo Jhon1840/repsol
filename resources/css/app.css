@@ -46,6 +46,137 @@
 }
 
 @layer components {
+    .fi-no {
+        pointer-events: none;
+        position: fixed;
+        inset: 1rem;
+        z-index: 50;
+        display: flex;
+        gap: 0.75rem;
+    }
+
+    .fi-no.fi-align-start,
+    .fi-no.fi-align-left {
+        align-items: flex-start;
+    }
+
+    .fi-no.fi-align-center {
+        align-items: center;
+    }
+
+    .fi-no.fi-align-end,
+    .fi-no.fi-align-right {
+        align-items: flex-end;
+    }
+
+    .fi-no.fi-vertical-align-start {
+        flex-direction: column-reverse;
+        justify-content: flex-end;
+    }
+
+    .fi-no.fi-vertical-align-center {
+        flex-direction: column;
+        justify-content: center;
+    }
+
+    .fi-no.fi-vertical-align-end {
+        flex-direction: column;
+        justify-content: flex-end;
+    }
+
+    .fi-no-notification {
+        pointer-events: auto;
+        visibility: hidden;
+        display: flex;
+        width: min(24rem, calc(100vw - 2rem));
+        flex-shrink: 0;
+        gap: 0.75rem;
+        overflow: hidden;
+        border-radius: 0.75rem;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: #111827;
+        padding: 1rem;
+        color: white;
+        box-shadow: 0 18px 45px -20px rgba(0, 0, 0, 0.75);
+        transition: opacity 0.3s ease, transform 0.3s ease;
+    }
+
+    .fi-no-notification.fi-transition-enter-start {
+        opacity: 0;
+        transform: translateX(3rem);
+    }
+
+    .fi-no-notification.fi-transition-leave-end {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+
+    .fi-no-notification-icon {
+        width: 1.5rem;
+        height: 1.5rem;
+        flex-shrink: 0;
+        color: #f87171;
+    }
+
+    .fi-icon {
+        width: 1.25rem;
+        height: 1.25rem;
+    }
+
+    .fi-icon.fi-size-lg {
+        width: 1.5rem;
+        height: 1.5rem;
+    }
+
+    .fi-icon > svg {
+        width: inherit;
+        height: inherit;
+    }
+
+    .fi-no-notification-main {
+        margin-top: 0.125rem;
+        display: grid;
+        flex: 1;
+        gap: 0.75rem;
+        min-width: 0;
+    }
+
+    .fi-no-notification-text {
+        display: grid;
+        gap: 0.25rem;
+    }
+
+    .fi-no-notification-title {
+        color: white;
+        font-size: 0.875rem;
+        font-weight: 700;
+        line-height: 1.35;
+    }
+
+    .fi-no-notification-body {
+        overflow: hidden;
+        color: #d1d5db;
+        font-size: 0.875rem;
+        line-height: 1.45;
+        overflow-wrap: anywhere;
+    }
+
+    .fi-no-notification-close-btn {
+        margin: -0.5rem;
+        display: flex;
+        width: 2.25rem;
+        height: 2.25rem;
+        align-items: center;
+        justify-content: center;
+        border-radius: 0.5rem;
+        color: #6b7280;
+        transition: color 0.15s ease;
+    }
+
+    .fi-no-notification-close-btn:hover {
+        color: #d1d5db;
+    }
+
     .portal-shell {
         min-height: 100vh;
         background:

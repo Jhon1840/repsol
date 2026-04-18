@@ -3,11 +3,13 @@
 namespace Tests\Feature;
 
 use App\Filament\Pages\Dashboard;
+use App\Filament\Resources\Riders\Pages\EditRider;
 use App\Filament\Resources\Riders\Pages\ListRiders;
 use App\Models\Rider;
 use App\Models\RiderMovement;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Livewire\Livewire;
 use ReflectionMethod;
 use Tests\TestCase;
 
@@ -307,5 +309,64 @@ class BranchManagerScopeTest extends TestCase
 
         $this->assertDatabaseCount('uploaded_documents', 0);
         $this->assertDatabaseCount('rider_movements', 0);
+    }
+
+    public function test_non_admin_users_can_edit_rider_data_but_not_points(): void
+    {
+        $user = User::query()->create([
+            'name' => 'Marketing Edita Rider',
+            'email' => 'marketing-edit-rider@example.com',
+            'password' => 'password',
+            'role' => User::ROLE_MARKETING,
+            'branch' => 'SANTA CRUZ',
+        ]);
+
+        $rider = Rider::query()->create([
+            'rider_id' => 'EDITNOPTS001',
+            'name' => 'Nombre Original',
+            'branch' => 'SANTA CRUZ',
+            'rango' => 'BRONCE',
+        ]);
+
+        RiderMovement::query()->create([
+            'rider_id' => $rider->getKey(),
+            'branch' => 'SANTA CRUZ',
+            'movement_type' => 'purchase',
+            'points' => 120,
+            'occurred_at' => now(),
+        ]);
+
+        $this->actingAs($user);
+
+        Livewire::test(EditRider::class, ['record' => $rider->getRouteKey()])
+            ->assertFormFieldIsDisabled('points_balance');
+
+        $page = app(EditRider::class);
+        $page->record = $rider;
+
+        $mutateMethod = new ReflectionMethod($page, 'mutateFormDataBeforeSave');
+        $mutateMethod->setAccessible(true);
+        $handleMethod = new ReflectionMethod($page, 'handleRecordUpdate');
+        $handleMethod->setAccessible(true);
+
+        $data = $mutateMethod->invoke($page, [
+            'rider_id' => $rider->rider_id,
+            'name' => 'Nombre Actualizado',
+            'branch' => 'SANTA CRUZ',
+            'rango' => 'PLATA',
+            'points_balance' => 999,
+        ]);
+
+        $handleMethod->invoke($page, $rider, $data);
+
+        $rider->refresh();
+
+        $this->assertSame('Nombre Actualizado', $rider->name);
+        $this->assertSame('PLATA', $rider->rango);
+        $this->assertSame(120, (int) $rider->movements()->sum('points'));
+        $this->assertDatabaseMissing('rider_movements', [
+            'rider_id' => $rider->getKey(),
+            'movement_type' => 'manual_adjustment',
+        ]);
     }
 }

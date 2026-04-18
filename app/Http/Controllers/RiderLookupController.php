@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Articulos;
 use App\Models\Rider;
 use App\Models\RiderMovement;
+use Filament\Notifications\Notification;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -146,11 +147,13 @@ class RiderLookupController extends Controller
             ->implode(', ');
 
         if ($pointsToDiscount > $availablePoints) {
+            Notification::make()
+                ->title('El rider no cuenta con puntos suficientes para este descuento.')
+                ->danger()
+                ->send();
+
             return back()
-                ->withInput()
-                ->withErrors([
-                    'points' => 'El rider no tiene suficientes puntos para realizar este descuento.',
-                ]);
+                ->withInput();
         }
 
         RiderMovement::create([
