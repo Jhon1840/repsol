@@ -17,13 +17,10 @@ class ArticulosInfolist
                 Section::make('Resumen')
                     ->schema([
                         ImageEntry::make('imagenes')
-                            ->label('Imagenes')
+                            ->label('Imagen')
                             ->disk('public')
                             ->imageHeight(120)
-                            ->stacked()
-                            ->limit(4)
-                            ->limitedRemainingText()
-                            ->placeholder('Sin imagenes')
+                            ->placeholder('Sin imagen')
                             ->columnSpanFull(),
                         TextEntry::make('nombre')
                             ->label('Nombre'),

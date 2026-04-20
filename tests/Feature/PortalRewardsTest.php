@@ -49,7 +49,7 @@ class PortalRewardsTest extends TestCase
         $gorra = Articulos::query()->create([
             'nombre' => 'Gorra',
             'descripcion' => 'Gorra oficial del programa.',
-            'imagenes' => ['articulos/gorra.png'],
+            'imagenes' => 'articulos/gorra.png',
         ]);
 
         $vaso = Articulos::query()->create([

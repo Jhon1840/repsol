@@ -30,19 +30,13 @@ class ArticulosForm
                             ->placeholder('Descripcion opcional del articulo')
                             ->columnSpanFull(),
                         FileUpload::make('imagenes')
-                            ->label('Imagenes del articulo')
+                            ->label('Imagen del articulo')
                             ->image()
-                            ->multiple()
-                            ->maxFiles(6)
                             ->maxSize(5120)
                             ->disk('public')
                             ->directory('articulos')
                             ->visibility('public')
-                            ->panelLayout('grid')
-                            ->reorderable()
-                            ->appendFiles()
                             ->imagePreviewHeight('180')
-                            ->helperText('Sube hasta 6 imagenes. La primera se mostrara como foto principal en premios disponibles.')
                             ->columnSpanFull(),
                     ])
                     ->columns(2),

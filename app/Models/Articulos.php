@@ -27,7 +27,11 @@ class Articulos extends Model
 
     public function primaryImagePath(): ?string
     {
-        return collect($this->imagenes)
+        $imagenes = is_array($this->imagenes)
+            ? $this->imagenes
+            : [$this->imagenes];
+
+        return collect($imagenes)
             ->filter(fn (?string $path): bool => filled($path))
             ->first();
     }
