@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Articulos\Schemas;
 
 use App\Models\Rider;
+use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Section;
@@ -15,7 +16,7 @@ class ArticulosForm
         return $schema
             ->components([
                 Section::make('Datos del articulo')
-                    ->description('Administra el nombre y la descripcion del articulo.')
+                    ->description('Administra el nombre, la descripcion y las fotos visibles para el rider.')
                     ->schema([
                         TextInput::make('nombre')
                             ->label('Nombre')
@@ -27,6 +28,21 @@ class ArticulosForm
                             ->rows(4)
                             ->maxLength(65535)
                             ->placeholder('Descripcion opcional del articulo')
+                            ->columnSpanFull(),
+                        FileUpload::make('imagenes')
+                            ->label('Imagenes del articulo')
+                            ->image()
+                            ->multiple()
+                            ->maxFiles(6)
+                            ->maxSize(5120)
+                            ->disk('public')
+                            ->directory('articulos')
+                            ->visibility('public')
+                            ->panelLayout('grid')
+                            ->reorderable()
+                            ->appendFiles()
+                            ->imagePreviewHeight('180')
+                            ->helperText('Sube hasta 6 imagenes. La primera se mostrara como foto principal en premios disponibles.')
                             ->columnSpanFull(),
                     ])
                     ->columns(2),

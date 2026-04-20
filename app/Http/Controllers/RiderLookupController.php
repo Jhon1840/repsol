@@ -13,6 +13,60 @@ use Illuminate\View\View;
 
 class RiderLookupController extends Controller
 {
+    public function index(): View
+    {
+        return view('portal.index');
+    }
+
+    public function search(Request $request): View|RedirectResponse
+    {
+        $validated = $request->validate([
+            'rider_id' => ['required', 'string', 'max:255'],
+        ]);
+
+        $rider = Rider::query()
+            ->withPointsBalance()
+            ->with(['movements' => fn ($query) => $query
+                ->latest('occurred_at')
+                ->latest('id')])
+            ->where('rider_id', Rider::normalizeRiderId($validated['rider_id']))
+            ->first();
+
+        if (! $rider) {
+            return back()
+                ->withInput()
+                ->withErrors([
+                    'rider_id' => 'No se encontró un rider con ese ID.',
+                ]);
+        }
+
+        return view('portal.show', [
+            'rider' => $rider,
+        ]);
+    }
+
+    public function rewards(Rider $rider): View
+    {
+        $rider->loadSum('movements as points_balance', 'points');
+
+        $articulos = Articulos::query()
+            ->when($rider->rango, fn ($query) => $query->whereHas(
+                'pointCosts',
+                fn ($costQuery) => $costQuery->where('rango', $rider->rango),
+            ))
+            ->with(['pointCosts' => fn ($query) => $query->when(
+                $rider->rango,
+                fn ($costQuery) => $costQuery->where('rango', $rider->rango),
+            )])
+            ->orderBy('nombre')
+            ->get(['id', 'nombre', 'descripcion', 'imagenes']);
+
+        return view('portal.rewards', [
+            'articulos' => $articulos,
+            'rider' => $rider,
+        ]);
+    }
+
     public function discountForm(Request $request): View|RedirectResponse
     {
         $rider = null;

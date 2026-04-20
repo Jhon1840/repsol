@@ -7,6 +7,7 @@ const points = document.getElementById('rider-points');
 const riderName = document.getElementById('rider-name');
 const riderCode = document.getElementById('rider-code');
 const riderRango = document.getElementById('rider-rango');
+const riderRewardsLink = document.getElementById('rider-rewards-link');
 const riderMovements = document.getElementById('rider-movements');
 const riderMovementList = document.getElementById('rider-movement-list');
 
@@ -67,6 +68,7 @@ form.addEventListener('submit', async (event) => {
     const riderId = input.value.trim().toUpperCase();
 
     result.hidden = true;
+    riderRewardsLink.hidden = true;
     clearMessage();
 
     if (! riderId) {
@@ -95,6 +97,8 @@ form.addEventListener('submit', async (event) => {
         riderName.textContent = data.rider.name;
         riderCode.textContent = `ID ${data.rider.rider_id}`;
         riderRango.textContent = data.rider.rango ? `Rango ${data.rider.rango}` : 'Sin rango asignado';
+        riderRewardsLink.href = `/consulta-puntos/${encodeURIComponent(data.rider.rider_id)}/premios`;
+        riderRewardsLink.hidden = false;
         renderMovements(data.recent_movements || []);
         result.hidden = false;
     } catch (error) {

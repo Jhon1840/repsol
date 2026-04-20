@@ -65,9 +65,15 @@
                 </div>
             </section>
 
-            <a href="{{ route('portal.index') }}" class="rider-back-button">
-                Nueva consulta
-            </a>
+            <div class="rider-result-actions">
+                <a href="{{ route('portal.rewards', $rider) }}" class="rider-submit-button">
+                    Ver premios disponibles
+                </a>
+
+                <a href="{{ route('portal.index') }}" class="rider-back-button">
+                    Nueva consulta
+                </a>
+            </div>
 
             <footer class="rider-info-footer">
                 <div class="rider-info-row">

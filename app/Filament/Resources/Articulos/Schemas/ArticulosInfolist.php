@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Articulos\Schemas;
 
 use App\Models\Rider;
+use Filament\Infolists\Components\ImageEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
@@ -15,6 +16,15 @@ class ArticulosInfolist
             ->components([
                 Section::make('Resumen')
                     ->schema([
+                        ImageEntry::make('imagenes')
+                            ->label('Imagenes')
+                            ->disk('public')
+                            ->imageHeight(120)
+                            ->stacked()
+                            ->limit(4)
+                            ->limitedRemainingText()
+                            ->placeholder('Sin imagenes')
+                            ->columnSpanFull(),
                         TextEntry::make('nombre')
                             ->label('Nombre'),
                         TextEntry::make('descripcion')

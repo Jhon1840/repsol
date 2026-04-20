@@ -8,6 +8,9 @@ use Filament\Http\Middleware\Authenticate;
 use Illuminate\Support\Facades\Route;
 
 Route::redirect('/', '/consulta-puntos/');
+Route::get('/consulta-puntos/', [RiderLookupController::class, 'index'])->name('portal.index');
+Route::post('/consulta-puntos/', [RiderLookupController::class, 'search'])->name('portal.search');
+Route::get('/consulta-puntos/{rider}/premios', [RiderLookupController::class, 'rewards'])->name('portal.rewards');
 Route::middleware([Authenticate::class])->group(function (): void {
     Route::get('/descuento', [RiderLookupController::class, 'discountForm'])->name('portal.discount.form');
     Route::post('/descuento', [RiderLookupController::class, 'discount'])->name('portal.discount');

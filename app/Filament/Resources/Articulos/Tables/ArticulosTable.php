@@ -6,6 +6,7 @@ use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
+use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 
@@ -15,6 +16,12 @@ class ArticulosTable
     {
         return $table
             ->columns([
+                ImageColumn::make('imagenes')
+                    ->label('Foto')
+                    ->disk('public')
+                    ->state(fn ($record): ?string => $record->primaryImagePath())
+                    ->imageSize(54)
+                    ->square(),
                 TextColumn::make('nombre')
                     ->label('Nombre')
                     ->searchable()
