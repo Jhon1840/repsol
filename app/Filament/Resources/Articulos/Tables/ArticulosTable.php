@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Articulos\Tables;
 
+use App\Filament\Resources\Articulos\ArticulosResource;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -41,11 +42,15 @@ class ArticulosTable
             ])
             ->recordActions([
                 ViewAction::make()->label('Ver'),
-                EditAction::make()->label('Editar'),
+                EditAction::make()
+                    ->label('Editar')
+                    ->visible(fn ($record): bool => ArticulosResource::canEdit($record)),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make()->label('Eliminar seleccionados'),
+                    DeleteBulkAction::make()
+                        ->label('Eliminar seleccionados')
+                        ->visible(fn (): bool => ArticulosResource::canDeleteAny()),
                 ]),
             ])
             ->defaultSort('nombre')

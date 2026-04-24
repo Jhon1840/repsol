@@ -7,7 +7,7 @@ use App\Http\Controllers\RiderLookupController;
 use Filament\Http\Middleware\Authenticate;
 use Illuminate\Support\Facades\Route;
 
-Route::redirect('/', '/consulta-puntos/');
+Route::get('/', fn () => to_route('filament.admin.auth.login'));
 Route::get('/consulta-puntos/', [RiderLookupController::class, 'index'])->name('portal.index');
 Route::post('/consulta-puntos/', [RiderLookupController::class, 'search'])->name('portal.search');
 Route::get('/consulta-puntos/{rider}/premios', [RiderLookupController::class, 'rewards'])->name('portal.rewards');

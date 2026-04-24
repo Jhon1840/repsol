@@ -29,7 +29,7 @@ class Login extends BaseLogin
     {
         return parent::getEmailFormComponent()
             ->label('Correo administrativo')
-            ->placeholder('admin@repsol-filament.test');
+            ->placeholder('usuario');
     }
 
     protected function getPasswordFormComponent(): Component

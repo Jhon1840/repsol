@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Products\Tables;
 
+use App\Filament\Resources\Products\ProductResource;
 use Filament\Actions\EditAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
@@ -43,7 +44,9 @@ class ProductsTable
                 //
             ])
             ->recordActions([
-                EditAction::make()->label('Editar'),
+                EditAction::make()
+                    ->label('Editar')
+                    ->visible(fn ($record): bool => ProductResource::canEdit($record)),
             ])
             ->defaultSort('name')
             ->paginated([10, 25, 50]);

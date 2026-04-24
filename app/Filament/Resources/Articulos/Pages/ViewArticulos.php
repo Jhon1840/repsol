@@ -13,7 +13,8 @@ class ViewArticulos extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
-            EditAction::make(),
+            EditAction::make()
+                ->visible(fn (): bool => ArticulosResource::canEdit($this->getRecord())),
         ];
     }
 }

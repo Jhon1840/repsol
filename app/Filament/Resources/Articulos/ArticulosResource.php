@@ -10,11 +10,13 @@ use App\Filament\Resources\Articulos\Schemas\ArticulosForm;
 use App\Filament\Resources\Articulos\Schemas\ArticulosInfolist;
 use App\Filament\Resources\Articulos\Tables\ArticulosTable;
 use App\Models\Articulos;
+use App\Models\User;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Model;
 
 class ArticulosResource extends Resource
 {
@@ -54,5 +56,40 @@ class ArticulosResource extends Resource
             'view' => ViewArticulos::route('/{record}'),
             'edit' => EditArticulos::route('/{record}/edit'),
         ];
+    }
+
+    public static function canViewAny(): bool
+    {
+        return auth()->check();
+    }
+
+    public static function canView(Model $record): bool
+    {
+        return auth()->check();
+    }
+
+    public static function canCreate(): bool
+    {
+        return ! static::isBranchManager();
+    }
+
+    public static function canEdit(Model $record): bool
+    {
+        return ! static::isBranchManager();
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        return ! static::isBranchManager();
+    }
+
+    public static function canDeleteAny(): bool
+    {
+        return ! static::isBranchManager();
+    }
+
+    protected static function isBranchManager(): bool
+    {
+        return auth()->user()?->role === User::ROLE_BRANCH_MANAGER;
     }
 }

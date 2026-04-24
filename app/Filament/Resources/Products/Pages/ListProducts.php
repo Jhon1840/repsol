@@ -18,7 +18,9 @@ class ListProducts extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            CreateAction::make()->label('Crear producto'),
+            CreateAction::make()
+                ->label('Crear producto')
+                ->visible(fn (): bool => ProductResource::canCreate()),
         ];
     }
 }
