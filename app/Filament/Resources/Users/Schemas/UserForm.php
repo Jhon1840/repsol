@@ -61,12 +61,11 @@ class UserForm
                             ->dehydrated()
                             ->native(false),
                         TextInput::make('email')
-                            ->label('Correo')
-                            ->email()
+                            ->label('Username')
                             ->required()
                             ->unique(ignoreRecord: true)
                             ->maxLength(255)
-                            ->placeholder('usuario@repsol-filament.test'),
+                            ->placeholder('usuario'),
                         TextInput::make('password')
                             ->label('Contraseña')
                             ->password()

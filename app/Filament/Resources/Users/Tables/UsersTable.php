@@ -42,7 +42,7 @@ class UsersTable
                     ->searchable()
                     ->sortable(),
                 TextColumn::make('email')
-                    ->label('Correo')
+                    ->label('Username')
                     ->searchable()
                     ->sortable(),
                 TextColumn::make('updated_at')

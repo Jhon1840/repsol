@@ -22,14 +22,18 @@ class Login extends BaseLogin
 
     public function getSubheading(): string | Htmlable | null
     {
-        return new HtmlString('Panel interno para gestionar los riders y sus puntos acumulados. <br>Utiliza el correo administrativo para iniciar sesión.');
+        return new HtmlString('Panel interno para gestionar los riders y sus puntos acumulados. <br>Utiliza el username administrativo para iniciar sesión.');
     }
 
     protected function getEmailFormComponent(): Component
     {
-        return parent::getEmailFormComponent()
-            ->label('Correo administrativo')
-            ->placeholder('usuario');
+        return TextInput::make('email')
+            ->label('Username administrativo')
+            ->placeholder('usuario')
+            ->required()
+            ->autocomplete('username')
+            ->autofocus()
+            ->type('text');
     }
 
     protected function getPasswordFormComponent(): Component
