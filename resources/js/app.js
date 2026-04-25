@@ -43,7 +43,7 @@ const showInstallButton = () => {
 
 const getFallbackInstallMessage = () => {
     if (isIos()) {
-        return 'Para instalar en iPhone o iPad, abre el menú Compartir del navegador y toca "Agregar a pantalla de inicio".';
+        return 'Para instalar en iPhone, abre esta página en Safari y toca Compartir > Agregar a pantalla de inicio.';
     }
 
     if (isAndroid()) {

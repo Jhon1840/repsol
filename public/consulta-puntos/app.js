@@ -70,7 +70,7 @@ const hideInstallUi = () => {
 
 const getFallbackInstallMessage = () => {
     if (isIos()) {
-        return 'Para instalar en iPhone o iPad, abre Compartir y toca "Agregar a pantalla de inicio".';
+        return 'Para instalar en iPhone, abre esta página en Safari y toca Compartir > Agregar a pantalla de inicio.';
     }
 
     if (isAndroid()) {
