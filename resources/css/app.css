@@ -1057,6 +1057,73 @@
         box-shadow: 0 18px 36px -18px rgba(193, 42, 58, 0.9);
     }
 
+    .rider-install-card {
+        display: grid;
+        gap: 0.75rem;
+        margin-top: 0.1rem;
+        border: 1px solid rgba(240, 217, 138, 0.18);
+        border-radius: 1rem;
+        background: rgba(240, 217, 138, 0.08);
+        padding: 1rem;
+        text-align: center;
+    }
+
+    .dark .rider-install-card {
+        border-color: rgba(240, 217, 138, 0.14);
+        background: rgba(240, 217, 138, 0.06);
+    }
+
+    .rider-install-copy,
+    .rider-install-hint {
+        margin: 0;
+        font-size: 0.88rem;
+        line-height: 1.5;
+    }
+
+    .rider-install-copy {
+        color: var(--repsol-night);
+        font-weight: 700;
+    }
+
+    .dark .rider-install-copy {
+        color: white;
+    }
+
+    .rider-install-hint {
+        color: var(--repsol-steel);
+    }
+
+    .dark .rider-install-hint {
+        color: #cbd5e1;
+    }
+
+    .rider-install-button {
+        display: inline-flex;
+        width: 100%;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid rgba(240, 217, 138, 0.26);
+        border-radius: 1rem;
+        padding: 0.95rem 1.2rem;
+        background: rgba(255, 255, 255, 0.78);
+        color: var(--repsol-night);
+        font-size: 0.96rem;
+        font-weight: 800;
+        transition: transform 0.25s ease, box-shadow 0.25s ease, background 0.25s ease;
+        box-shadow: 0 12px 28px -20px rgba(10, 26, 47, 0.45);
+    }
+
+    .rider-install-button:hover {
+        transform: translateY(-1px);
+        background: rgba(255, 255, 255, 0.92);
+    }
+
+    .dark .rider-install-button {
+        border-color: rgba(240, 217, 138, 0.2);
+        background: rgba(255, 255, 255, 0.1);
+        color: white;
+    }
+
     .rider-example-hint {
         text-align: center;
         color: #6b7280;

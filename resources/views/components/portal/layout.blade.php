@@ -8,10 +8,11 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Consulta Puntos">
+    <meta name="application-name" content="Consulta Puntos">
     <meta name="mobile-web-app-capable" content="yes">
     <title>{{ $title ?? 'Consulta de riders' }}</title>
     <link rel="manifest" href="{{ asset('consulta-puntos/manifest.json') }}">
-    <link rel="apple-touch-icon" href="{{ asset('consulta-puntos/PedidosYa.png') }}">
+    <link rel="apple-touch-icon" sizes="192x192" href="{{ asset('consulta-puntos/icon-192.png') }}">
     @filamentStyles
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     {{-- Theme mode kept for future use.
@@ -84,4 +85,3 @@
     </script>
 </body>
 </html>
-

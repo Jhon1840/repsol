@@ -36,6 +36,18 @@
                     Consultar Puntos
                 </button>
 
+                <div class="rider-install-card" id="portal-install-card" hidden>
+                    <p class="rider-install-copy" id="portal-install-copy">
+                        Instala esta app para consultar puntos más rápido desde tu dispositivo.
+                    </p>
+
+                    <button type="button" class="rider-install-button" id="portal-install-button" hidden>
+                        Instalar app
+                    </button>
+
+                    <p class="rider-install-hint" id="portal-install-hint" hidden></p>
+                </div>
+
             </form>
 
         </article>
