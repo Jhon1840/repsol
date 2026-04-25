@@ -1,6 +1,6 @@
 {
-    "name": "Consulta de Puntos Repsol",
-    "short_name": "Puntos",
+    "name": "Riders Pedidos Ya",
+    "short_name": "Riders",
     "id": "/consulta-puntos/",
     "start_url": "/consulta-puntos/",
     "scope": "/consulta-puntos/",

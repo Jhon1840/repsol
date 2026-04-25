@@ -7,8 +7,8 @@
     <meta name="theme-color" content="#0a1a2f">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Consulta Puntos">
-    <meta name="application-name" content="Consulta Puntos">
+    <meta name="apple-mobile-web-app-title" content="Riders Pedidos Ya">
+    <meta name="application-name" content="Riders Pedidos Ya">
     <meta name="mobile-web-app-capable" content="yes">
     <title>{{ $title ?? 'Consulta de riders' }}</title>
     <link rel="manifest" href="{{ asset('consulta-puntos/manifest.json') }}">

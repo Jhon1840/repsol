@@ -13,12 +13,10 @@ const riderMovementList = document.getElementById('rider-movement-list');
 const installCard = document.getElementById('portal-install-card');
 const installButton = document.getElementById('portal-install-button');
 const installHint = document.getElementById('portal-install-hint');
-const debugBody = document.getElementById('portal-debug-body');
 
 const configuredApiBase = document.body.dataset.apiBase || window.RIDER_POINTS_API_BASE || '';
 const apiBase = configuredApiBase.replace(/\/$/, '') || window.location.origin;
 let deferredInstallPrompt = null;
-const pwaDebugLines = [];
 
 const isStandalone = () =>
     window.matchMedia?.('(display-mode: standalone)').matches || window.navigator.standalone === true;
@@ -35,22 +33,6 @@ const isChromium = () =>
 const isSafari = () =>
     /safari/i.test(window.navigator.userAgent) &&
     !/chrome|crios|android|fxios|edgios|brave/i.test(window.navigator.userAgent);
-
-const logPwaDebug = (label, value = '') => {
-    const line = value === '' ? label : `${label}: ${value}`;
-    pwaDebugLines.push(line);
-    console.info('[PWA DEBUG]', line);
-
-    try {
-        window.localStorage.setItem('pwa-debug-log', JSON.stringify(pwaDebugLines.slice(-50)));
-    } catch (error) {
-        console.warn('[PWA DEBUG] No se pudo guardar log local.', error);
-    }
-
-    if (debugBody) {
-        debugBody.textContent = pwaDebugLines.join('\n');
-    }
-};
 
 const showInstallHint = (text) => {
     if (!installCard || !installHint) {
@@ -107,21 +89,10 @@ const getFallbackInstallMessage = () => {
 };
 
 if (installCard && installButton && installHint) {
-    logPwaDebug('URL', window.location.href);
-    logPwaDebug('User agent', window.navigator.userAgent);
-    logPwaDebug('Standalone', String(isStandalone()));
-    logPwaDebug('iOS', String(isIos()));
-    logPwaDebug('Android', String(isAndroid()));
-    logPwaDebug('Chromium', String(isChromium()));
-    logPwaDebug('Safari', String(isSafari()));
-    logPwaDebug('Manifest', document.querySelector('link[rel="manifest"]')?.getAttribute('href') ?? 'No encontrado');
-
     if (isStandalone()) {
         hideInstallUi();
-        logPwaDebug('Estado', 'La app ya esta instalada o abierta como standalone.');
     } else {
         showInstallHint(getFallbackInstallMessage());
-        logPwaDebug('Estado', 'Mostrando mensaje manual porque beforeinstallprompt aun no disparo.');
     }
 
     window.addEventListener('beforeinstallprompt', (event) => {
@@ -129,21 +100,17 @@ if (installCard && installButton && installHint) {
         deferredInstallPrompt = event;
         showInstallButton();
         showInstallHint('Puedes instalar esta app directamente desde este botón.');
-        logPwaDebug('beforeinstallprompt', 'SI');
     });
 
     installButton.addEventListener('click', async () => {
         if (!deferredInstallPrompt) {
-            logPwaDebug('Click instalar', 'Sin deferredPrompt disponible.');
             return;
         }
 
-        logPwaDebug('Click instalar', 'Solicitando prompt nativo.');
         deferredInstallPrompt.prompt();
 
         const { outcome } = await deferredInstallPrompt.userChoice;
         deferredInstallPrompt = null;
-        logPwaDebug('Resultado prompt', outcome);
 
         if (outcome === 'accepted') {
             hideInstallUi();
@@ -156,25 +123,7 @@ if (installCard && installButton && installHint) {
     window.addEventListener('appinstalled', () => {
         deferredInstallPrompt = null;
         hideInstallUi();
-        logPwaDebug('appinstalled', 'SI');
     });
-
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.getRegistration('/consulta-puntos/').then((registration) => {
-            logPwaDebug('Service worker scope', registration?.scope ?? 'Sin registro activo');
-            logPwaDebug('Service worker active', registration?.active ? 'SI' : 'NO');
-        }).catch((error) => {
-            logPwaDebug('Service worker error', error?.message ?? 'Error desconocido');
-        });
-    } else {
-        logPwaDebug('Service worker', 'No soportado por este navegador');
-    }
-
-    window.setTimeout(() => {
-        if (!deferredInstallPrompt && !isStandalone()) {
-            logPwaDebug('Diagnostico final', 'El navegador no emitio beforeinstallprompt. Debes instalar desde el menu del navegador o usar Chrome/Samsung Internet compatibles.');
-        }
-    }, 3000);
 }
 
 const setMessage = (text, isError = false) => {

@@ -79,13 +79,6 @@
                         <p class="rider-install-hint" id="portal-install-hint" hidden></p>
                     </div>
 
-                    <details class="rider-debug-card" id="portal-debug-card">
-                        <summary>Diagnostico de instalacion</summary>
-                        <div class="rider-debug-body" id="portal-debug-body">
-                            Cargando diagnostico...
-                        </div>
-                    </details>
-
                 </form>
 
                 <section class="rider-result-card" id="rider-result" hidden>
@@ -110,17 +103,27 @@
         </section>
     </main>
 
-    <script src="./app.js?v=20260425-2"></script>
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('./sw.js', {
                     scope: '/consulta-puntos/',
+                }).then((registration) => {
+                    window.__PWA_SW_STATUS__ = {
+                        ok: true,
+                        scope: registration.scope,
+                    };
+                    console.info('[PWA DEBUG] Service worker registrado.', registration.scope);
                 }).catch((error) => {
+                    window.__PWA_SW_STATUS__ = {
+                        ok: false,
+                        error: error?.message ?? 'Error desconocido',
+                    };
                     console.warn('[PWA DEBUG] No se pudo registrar el service worker.', error);
                 });
             });
         }
     </script>
+    <script src="./app.js?v=20260425-2"></script>
 </body>
 </html>
