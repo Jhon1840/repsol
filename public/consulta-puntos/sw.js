@@ -2,8 +2,8 @@ const CACHE_NAME = 'consulta-puntos-v2';
 const APP_SHELL = [
     '/consulta-puntos/',
     '/consulta-puntos/manifest.json',
-    '/consulta-puntos/icon-192-v3.png',
-    '/consulta-puntos/icon-512-v3.png'
+    '/consulta-puntos/icon-192-v4.png',
+    '/consulta-puntos/icon-512-v4.png'
 ];
 
 self.addEventListener('install', (event) => {

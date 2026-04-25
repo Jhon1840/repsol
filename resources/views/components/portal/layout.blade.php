@@ -12,7 +12,7 @@
     <meta name="mobile-web-app-capable" content="yes">
     <title>{{ $title ?? 'Consulta de riders' }}</title>
     <link rel="manifest" href="{{ asset('consulta-puntos/manifest.json') }}">
-    <link rel="apple-touch-icon" sizes="192x192" href="{{ asset('consulta-puntos/icon-192-v3.png') }}">
+    <link rel="apple-touch-icon" sizes="192x192" href="{{ asset('consulta-puntos/icon-192-v4.png') }}">
     @filamentStyles
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     {{-- Theme mode kept for future use.
