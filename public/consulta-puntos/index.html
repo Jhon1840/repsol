@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Consulta de Puntos</title>
-    <link rel="stylesheet" href="./styles.css">
+    <link rel="stylesheet" href="./styles.css?v=20260425-2">
 </head>
 <body data-api-base="">
     <main class="portal-main">
@@ -59,6 +59,18 @@
                         Consultar Puntos
                     </button>
 
+                    <div class="rider-install-card" id="portal-install-card" hidden>
+                        <p class="rider-install-copy" id="portal-install-copy">
+                            Instala esta app para consultar puntos más rápido desde tu dispositivo.
+                        </p>
+
+                        <button type="button" class="rider-install-button" id="portal-install-button" hidden>
+                            Instalar app
+                        </button>
+
+                        <p class="rider-install-hint" id="portal-install-hint" hidden></p>
+                    </div>
+
                 </form>
 
                 <section class="rider-result-card" id="rider-result" hidden>
@@ -83,6 +95,6 @@
         </section>
     </main>
 
-    <script src="./app.js"></script>
+    <script src="./app.js?v=20260425-2"></script>
 </body>
 </html>

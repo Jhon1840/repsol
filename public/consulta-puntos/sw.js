@@ -1,4 +1,4 @@
-const CACHE_NAME = 'consulta-puntos-v1';
+const CACHE_NAME = 'consulta-puntos-v2';
 const APP_SHELL = [
     '/consulta-puntos/',
     '/consulta-puntos/manifest.json',
@@ -57,6 +57,37 @@ self.addEventListener('fetch', (event) => {
     const isPortalAsset = url.pathname.startsWith('/consulta-puntos/') || url.pathname.startsWith('/build/');
 
     if (!isPortalAsset) {
+        return;
+    }
+
+    const isVersionedAsset =
+        url.pathname.startsWith('/consulta-puntos/') &&
+        (url.pathname.endsWith('.js') || url.pathname.endsWith('.css'));
+
+    if (isVersionedAsset) {
+        event.respondWith(
+            fetch(request)
+                .then((networkResponse) => {
+                    if (networkResponse && networkResponse.status === 200) {
+                        const responseClone = networkResponse.clone();
+                        caches.open(CACHE_NAME).then((cache) => {
+                            cache.put(request, responseClone);
+                        });
+                    }
+
+                    return networkResponse;
+                })
+                .catch(async () => {
+                    const cachedResponse = await caches.match(request);
+
+                    if (cachedResponse) {
+                        return cachedResponse;
+                    }
+
+                    throw new Error('Asset unavailable');
+                })
+        );
+
         return;
     }
 
