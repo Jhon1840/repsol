@@ -7,9 +7,14 @@ const isIos = () =>
     /iphone|ipad|ipod/i.test(window.navigator.userAgent) ||
     (window.navigator.platform === 'MacIntel' && window.navigator.maxTouchPoints > 1);
 
+const isAndroid = () => /android/i.test(window.navigator.userAgent);
+
+const isChromium = () =>
+    /chrome|crios|edg|edgios|brave/i.test(window.navigator.userAgent) && !/opr\//i.test(window.navigator.userAgent);
+
 const isSafari = () =>
     /safari/i.test(window.navigator.userAgent) &&
-    !/chrome|crios|android|fxios|edgios/i.test(window.navigator.userAgent);
+    !/chrome|crios|android|fxios|edgios|brave/i.test(window.navigator.userAgent);
 
 const installCard = document.getElementById('portal-install-card');
 const installButton = document.getElementById('portal-install-button');
@@ -36,6 +41,26 @@ const showInstallButton = () => {
     installButton.hidden = false;
 };
 
+const getFallbackInstallMessage = () => {
+    if (isIos()) {
+        return 'Para instalar en iPhone o iPad, abre el menú Compartir del navegador y toca "Agregar a pantalla de inicio".';
+    }
+
+    if (isAndroid()) {
+        return 'Si no aparece el botón, abre el menú del navegador y busca "Instalar app" o "Agregar a pantalla principal".';
+    }
+
+    if (isChromium()) {
+        return 'En computadora, si no aparece el botón, revisa el menú del navegador y busca "Instalar app".';
+    }
+
+    if (isSafari()) {
+        return 'En Safari de escritorio no siempre aparece instalación como app. Prueba desde un navegador compatible o usa el menú del sistema.';
+    }
+
+    return 'Si tu navegador no muestra el botón, prueba desde Chrome, Edge o Safari y revisa el menú del navegador para instalar la app.';
+};
+
 const hideInstallUi = () => {
     if (installCard) {
         installCard.hidden = true;
@@ -54,15 +79,15 @@ const hideInstallUi = () => {
 if (installCard && installButton && installHint) {
     if (isStandalone()) {
         hideInstallUi();
-    } else if (isIos() && isSafari()) {
-        showInstallHint('En iPhone o iPad, abre Compartir y luego toca "Agregar a pantalla de inicio".');
+    } else {
+        showInstallHint(getFallbackInstallMessage());
     }
 
     window.addEventListener('beforeinstallprompt', (event) => {
         event.preventDefault();
         deferredInstallPrompt = event;
         showInstallButton();
-        installHint.hidden = true;
+        showInstallHint('Puedes instalar esta app directamente desde este botón.');
     });
 
     installButton.addEventListener('click', async () => {
@@ -78,6 +103,7 @@ if (installCard && installButton && installHint) {
         if (outcome === 'accepted') {
             hideInstallUi();
         } else {
+            showInstallButton();
             showInstallHint('La instalación quedó cancelada. Puedes intentarlo otra vez desde este botón o desde el menú del navegador.');
         }
     });
