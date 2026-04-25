@@ -32,22 +32,21 @@ class ExcelRiderImportService
     {
         $directory = $targetRider ? 'documents/riders' : 'documents/global';
         $path = $file->store($directory, self::DOCUMENT_DISK);
+        $document = UploadedDocument::query()->create([
+            'rider_id' => $targetRider?->getKey(),
+            'uploaded_by' => $uploadedBy,
+            'original_name' => $file->getClientOriginalName(),
+            'path' => $path,
+            'disk' => self::DOCUMENT_DISK,
+            'mime_type' => $file->getMimeType(),
+            'size' => $file->getSize(),
+            'status' => 'pending_assignment',
+            'uploaded_at' => now(),
+            'metadata' => $metadata,
+        ]);
 
         try {
-            return DB::transaction(function () use ($file, $uploadedBy, $metadata, $path, $targetRider): UploadedDocument {
-                $document = UploadedDocument::query()->create([
-                    'rider_id' => $targetRider?->getKey(),
-                    'uploaded_by' => $uploadedBy,
-                    'original_name' => $file->getClientOriginalName(),
-                    'path' => $path,
-                    'disk' => self::DOCUMENT_DISK,
-                    'mime_type' => $file->getMimeType(),
-                    'size' => $file->getSize(),
-                    'status' => 'pending_assignment',
-                    'uploaded_at' => now(),
-                    'metadata' => $metadata,
-                ]);
-
+            return DB::transaction(function () use ($document, $metadata, $targetRider): UploadedDocument {
                 $branchScope = $this->normalizeBranch($metadata['branch_scope'] ?? null);
                 $parsed = $this->extractImportData(Storage::disk($document->disk)->path($document->path), $branchScope);
                 $processedItems = [];
@@ -131,11 +130,46 @@ class ExcelRiderImportService
 
                 return $document->fresh(['rider', 'movements']);
             });
+        } catch (ValidationException $exception) {
+            $document->update([
+                'status' => 'failed',
+                'metadata' => array_merge($metadata, [
+                    'fatal_errors' => $this->formatValidationErrors($exception),
+                    'notes' => 'El documento Excel no se pudo procesar.',
+                    'failed_at' => now()->toDateTimeString(),
+                ]),
+            ]);
+
+            throw $exception;
         } catch (\Throwable $exception) {
-            Storage::disk(self::DOCUMENT_DISK)->delete($path);
+            $document->update([
+                'status' => 'failed',
+                'metadata' => array_merge($metadata, [
+                    'fatal_errors' => [[
+                        'reason' => $exception->getMessage(),
+                    ]],
+                    'notes' => 'El documento Excel no se pudo procesar.',
+                    'failed_at' => now()->toDateTimeString(),
+                ]),
+            ]);
 
             throw $exception;
         }
+    }
+
+    protected function formatValidationErrors(ValidationException $exception): array
+    {
+        return collect($exception->errors())
+            ->flatMap(function (array $messages, string $field): array {
+                return collect($messages)
+                    ->map(fn (string $message): array => [
+                        'field' => $field,
+                        'reason' => $message,
+                    ])
+                    ->all();
+            })
+            ->values()
+            ->all();
     }
 
     public function extractImportData(string $path, ?string $branchScope = null): array

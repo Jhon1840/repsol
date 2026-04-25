@@ -4,7 +4,14 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    <meta name="theme-color" content="#0a1a2f">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Consulta Puntos">
+    <meta name="mobile-web-app-capable" content="yes">
     <title>{{ $title ?? 'Consulta de riders' }}</title>
+    <link rel="manifest" href="{{ asset('consulta-puntos/manifest.json') }}">
+    <link rel="apple-touch-icon" href="{{ asset('consulta-puntos/PedidosYa.png') }}">
     @filamentStyles
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     {{-- Theme mode kept for future use.
@@ -63,6 +70,18 @@
 
     @livewire(Filament\Livewire\Notifications::class)
     @filamentScripts(withCore: true)
+
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register("{{ asset('consulta-puntos/sw.js') }}", {
+                    scope: '/consulta-puntos/',
+                }).catch(() => {
+                    // Keep silent if SW registration fails; portal works without offline support.
+                });
+            });
+        }
+    </script>
 </body>
 </html>
 

@@ -32,7 +32,7 @@ class AdminPanelProvider extends PanelProvider
             ->login(Login::class)
             ->brandName('LATCO Riders')
             ->brandLogo(asset('assets/REPSOL LUBRICANTS HORIZONTAL BLANCO.png'))
-            ->brandLogoHeight('2.25rem')
+            ->brandLogoHeight('2.75rem')
             ->globalSearch(false)
             ->viteTheme('resources/css/filament/admin/theme.css')
             ->darkMode(true, isForced: true)

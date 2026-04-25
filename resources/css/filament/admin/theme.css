@@ -72,9 +72,47 @@
     }
 
     .fi-logo {
-        border-radius: 1rem;
-        padding: 0.35rem 0.55rem;
-        background: rgba(255, 255, 255, 0.05);
+        display: block;
+        width: auto !important;
+        max-width: none !important;
+        flex-shrink: 0;
+        object-fit: contain;
+        overflow: visible !important;
+        border-radius: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: transparent !important;
+        box-shadow: none !important;
+    }
+
+    .fi-sidebar-header a,
+    .fi-topbar-start a,
+    .fi-sidebar-header .fi-logo,
+    .fi-topbar-start .fi-logo {
+        border-radius: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: transparent !important;
+        box-shadow: none !important;
+    }
+
+    .fi-topbar-start,
+    .fi-sidebar-header-ctn,
+    .fi-sidebar-header,
+    .fi-sidebar-header-logo-ctn {
+        overflow: visible !important;
+        border-radius: 0 !important;
+        background: transparent !important;
+        box-shadow: none !important;
+    }
+
+    .fi-sidebar-header {
+        justify-content: flex-start;
+    }
+
+    .fi-sidebar-header-logo-ctn {
+        display: flex;
+        align-items: center;
     }
 
     .fi-main-sidebar,

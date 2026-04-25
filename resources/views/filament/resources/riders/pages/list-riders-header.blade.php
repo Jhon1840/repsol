@@ -27,7 +27,7 @@
             class="flex items-center justify-between gap-4 px-8 py-6"
             style="background: rgba(63, 92, 121, 0.24); border-bottom: 1px solid rgba(63, 92, 121, 0.35);"
         >
-            <h1 class="text-[2.1rem] font-semibold tracking-tight text-white">Raiders </h1>
+            <h1 class="text-[2.1rem] font-semibold tracking-tight text-white">Riders </h1>
 
             @if (count($this->getCachedHeaderActions()))
                 <div class="[&_.fi-btn]:rounded-xl [&_.fi-btn]:border-0 [&_.fi-btn]:bg-[linear-gradient(135deg,var(--repsol-orange),var(--repsol-red))] [&_.fi-btn]:px-5 [&_.fi-btn]:py-2.5 [&_.fi-btn]:text-sm [&_.fi-btn]:font-semibold [&_.fi-btn]:text-white">
