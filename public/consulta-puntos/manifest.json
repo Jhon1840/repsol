@@ -11,16 +11,16 @@
     "description": "Consulta tus puntos acumulados del programa Riders.",
     "icons": [
         {
-            "src": "/consulta-puntos/icon-192.png",
+            "src": "/consulta-puntos/icon-192-v2.png",
             "sizes": "192x192",
             "type": "image/png",
-            "purpose": "any"
+            "purpose": "any maskable"
         },
         {
-            "src": "/consulta-puntos/icon-512.png",
+            "src": "/consulta-puntos/icon-512-v2.png",
             "sizes": "512x512",
             "type": "image/png",
-            "purpose": "any"
+            "purpose": "any maskable"
         }
     ]
 }
