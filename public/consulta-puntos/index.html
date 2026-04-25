@@ -3,7 +3,15 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#0a1a2f">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Consulta Puntos">
+    <meta name="application-name" content="Consulta Puntos">
+    <meta name="mobile-web-app-capable" content="yes">
     <title>Consulta de Puntos</title>
+    <link rel="manifest" href="./manifest.json">
+    <link rel="apple-touch-icon" sizes="192x192" href="./icon-192.png">
     <link rel="stylesheet" href="./styles.css?v=20260425-2">
 </head>
 <body data-api-base="">
@@ -103,5 +111,16 @@
     </main>
 
     <script src="./app.js?v=20260425-2"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js', {
+                    scope: '/consulta-puntos/',
+                }).catch((error) => {
+                    console.warn('[PWA DEBUG] No se pudo registrar el service worker.', error);
+                });
+            });
+        }
+    </script>
 </body>
 </html>
