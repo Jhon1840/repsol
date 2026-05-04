@@ -46,7 +46,7 @@ class ExcelRiderImportService
         ]);
 
         try {
-            return DB::transaction(function () use ($document, $metadata, $targetRider): UploadedDocument {
+            return DB::transaction(function () use ($document, $metadata, $targetRider, $uploadedBy): UploadedDocument {
                 $branchScope = $this->normalizeBranch($metadata['branch_scope'] ?? null);
                 $parsed = $this->extractImportData(Storage::disk($document->disk)->path($document->path), $branchScope);
                 $processedItems = [];
