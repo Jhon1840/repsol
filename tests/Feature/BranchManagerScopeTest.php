@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Filament\Pages\Dashboard;
+use App\Filament\Resources\Riders\Pages\CreateRider;
 use App\Filament\Resources\Riders\Pages\EditRider;
 use App\Filament\Resources\Riders\Pages\ListRiders;
 use App\Models\Rider;
@@ -368,5 +369,74 @@ class BranchManagerScopeTest extends TestCase
             'rider_id' => $rider->getKey(),
             'movement_type' => 'manual_adjustment',
         ]);
+    }
+
+    public function test_manual_rider_creation_combines_first_names_and_last_names(): void
+    {
+        $user = User::query()->create([
+            'name' => 'Admin Crea Rider',
+            'email' => 'admin-create-rider@example.com',
+            'password' => 'password',
+            'role' => User::ROLE_ADMIN,
+        ]);
+
+        $this->actingAs($user);
+
+        $page = app(CreateRider::class);
+
+        $mutateMethod = new ReflectionMethod($page, 'mutateFormDataBeforeCreate');
+        $mutateMethod->setAccessible(true);
+        $handleMethod = new ReflectionMethod($page, 'handleRecordCreation');
+        $handleMethod->setAccessible(true);
+
+        $data = $mutateMethod->invoke($page, [
+            'rider_id' => 'MANUAL001',
+            'first_names' => 'Sandra Maria',
+            'last_names' => 'Parada Caballero',
+            'branch' => 'SANTA CRUZ',
+            'rango' => 'ORO',
+        ]);
+
+        $rider = $handleMethod->invoke($page, $data);
+
+        $this->assertSame('PYAMANUAL001', $rider->rider_id);
+        $this->assertSame('Sandra Maria Parada Caballero', $rider->name);
+        $this->assertDatabaseHas('riders', [
+            'rider_id' => 'PYAMANUAL001',
+            'name' => 'Sandra Maria Parada Caballero',
+            'creation_source' => 'manual',
+        ]);
+    }
+
+    public function test_manual_rider_creation_rejects_duplicate_normalized_id(): void
+    {
+        $user = User::query()->create([
+            'name' => 'Admin Duplica Rider',
+            'email' => 'admin-duplicate-rider@example.com',
+            'password' => 'password',
+            'role' => User::ROLE_ADMIN,
+        ]);
+
+        Rider::query()->create([
+            'rider_id' => 'PYAABC001',
+            'name' => 'Rider Existente',
+            'branch' => 'SANTA CRUZ',
+            'rango' => 'ORO',
+        ]);
+
+        $this->actingAs($user);
+
+        Livewire::test(CreateRider::class)
+            ->fillForm([
+                'rider_id' => 'ABC001',
+                'first_names' => 'Nuevo',
+                'last_names' => 'Duplicado',
+                'branch' => 'SANTA CRUZ',
+                'rango' => 'ORO',
+            ])
+            ->call('create')
+            ->assertHasFormErrors(['rider_id']);
+
+        $this->assertDatabaseCount('riders', 1);
     }
 }

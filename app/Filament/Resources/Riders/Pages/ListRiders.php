@@ -26,13 +26,15 @@ class ListRiders extends ListRecords
 
     public $pendingExcel = null;
 
+    public ?array $excelImportPreview = null;
+
     public function cancelExcelSelection(): void
     {
-        $this->reset('pendingExcel');
+        $this->reset('pendingExcel', 'excelImportPreview');
         $this->dispatch('excel-selection-cancelled');
     }
 
-    public function storeExcel(): void
+    public function storeExcel(bool $confirmed = false): void
     {
         if (! $this->canUploadExcel()) {
             Notification::make()
@@ -47,15 +49,29 @@ class ListRiders extends ListRecords
             'pendingExcel' => ['required', 'file', 'mimes:xlsx', 'max:20480'],
         ]);
 
+        $metadata = [
+            'source' => 'riders_list_upload',
+            'notes' => 'Carga automatizada de Excel desde la pantalla de riders.',
+            'branch_scope' => auth()->user()?->branchScope(),
+        ];
+
         try {
+            if (! $confirmed) {
+                $this->excelImportPreview = app(ExcelRiderImportService::class)->previewImport(
+                    $this->pendingExcel,
+                    null,
+                    $metadata,
+                );
+
+                if ($this->excelImportPreview['has_new_records'] ?? false) {
+                    return;
+                }
+            }
+
             $document = app(ExcelRiderImportService::class)->storeAndImport(
                 $this->pendingExcel,
                 auth()->id(),
-                [
-                    'source' => 'riders_list_upload',
-                    'notes' => 'Carga automatizada de Excel desde la pantalla de riders.',
-                    'branch_scope' => auth()->user()?->branchScope(),
-                ],
+                $metadata,
             );
         } catch (ValidationException $exception) {
             Notification::make()
@@ -67,7 +83,7 @@ class ListRiders extends ListRecords
             return;
         }
 
-        $this->reset('pendingExcel');
+        $this->reset('pendingExcel', 'excelImportPreview');
 
         Notification::make()
             ->title('Excel cargado')

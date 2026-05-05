@@ -92,7 +92,7 @@
                     <div class="relative flex items-start justify-between">
                         <div>
                             <p class="text-xs font-semibold uppercase tracking-[0.22em] text-[#3F5C79] dark:text-[#F0D98A]">Subir Excel</p>
-                            <p class="mt-2 text-sm leading-relaxed text-slate-500 dark:text-slate-300">Carga un Excel para leer la hoja REPORTE A SUBIR y calcular puntos como litros comprados por puntos por litro del producto.</p>
+                            <p class="mt-2 text-sm leading-relaxed text-slate-500 dark:text-slate-300">Carga un Excel para leer la hoja REPORTE A SUBIR y sumar los puntos desde la columna Total Puntos.</p>
                         </div>
                         <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#F6E8B7] text-[#0A1A2F] dark:bg-[#3F5C79]/35 dark:text-[#F0D98A]">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -250,8 +250,40 @@
                     </div>
 
                     <div class="mt-5 rounded-2xl border border-[#3F5C79]/12 bg-[#FFF8EB] p-5 text-sm text-slate-600 dark:border-[#3F5C79]/30 dark:bg-slate-900 dark:text-slate-300">
-                            El sistema buscará la hoja <strong>REPORTE A SUBIR</strong>, identificará el artículo y los litros comprados, y calculará los puntos como <strong>Litros x Puntos por litro</strong>.
+                            El sistema buscará la hoja <strong>REPORTE A SUBIR</strong> y sumará los puntos desde la columna <strong>Total Puntos</strong>.
                     </div>
+
+                    @if ($this->excelImportPreview)
+                        <div class="mt-4 grid gap-4 md:grid-cols-2">
+                            @if (count($this->excelImportPreview['new_products'] ?? []))
+                                <div class="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-100">
+                                    <p class="font-semibold">Productos que se crearán</p>
+                                    <ul class="mt-2 space-y-1">
+                                        @foreach (array_slice($this->excelImportPreview['new_products'], 0, 8) as $product)
+                                            <li>{{ $product['code'] }} - {{ $product['name'] }}</li>
+                                        @endforeach
+                                    </ul>
+                                    @if (count($this->excelImportPreview['new_products']) > 8)
+                                        <p class="mt-2 text-xs">Y {{ count($this->excelImportPreview['new_products']) - 8 }} producto(s) más.</p>
+                                    @endif
+                                </div>
+                            @endif
+
+                            @if (count($this->excelImportPreview['new_riders'] ?? []))
+                                <div class="rounded-2xl border border-sky-200 bg-sky-50 p-4 text-sm text-sky-900 dark:border-sky-900/50 dark:bg-sky-950/30 dark:text-sky-100">
+                                    <p class="font-semibold">Riders que se crearán</p>
+                                    <ul class="mt-2 space-y-1">
+                                        @foreach (array_slice($this->excelImportPreview['new_riders'], 0, 8) as $rider)
+                                            <li>{{ $rider['rider_id'] }} - {{ $rider['rider_name'] ?: 'Sin nombre' }}</li>
+                                        @endforeach
+                                    </ul>
+                                    @if (count($this->excelImportPreview['new_riders']) > 8)
+                                        <p class="mt-2 text-xs">Y {{ count($this->excelImportPreview['new_riders']) - 8 }} rider(s) más.</p>
+                                    @endif
+                                </div>
+                            @endif
+                        </div>
+                    @endif
 
                     @error('pendingExcel')
                         <p class="mt-3 text-sm font-medium text-red-600">{{ $message }}</p>
@@ -261,8 +293,8 @@
                         <button type="button" x-on:click="clearSelection(); $wire.cancelExcelSelection()" class="rounded-full border border-[#3F5C79]/30 px-5 py-3 text-sm font-semibold text-[#3F5C79] dark:border-[#3F5C79]/60 dark:text-slate-200">
                             Cancelar
                         </button>
-                        <button type="button" wire:click="storeExcel" class="rounded-full bg-gradient-to-r from-[#E39B63] via-[#FF7A45] to-[#C12A3A] px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-orange-200 dark:shadow-orange-950/40">
-                            Continuar
+                        <button type="button" wire:click="{{ $this->excelImportPreview ? 'storeExcel(true)' : 'storeExcel' }}" class="rounded-full bg-gradient-to-r from-[#E39B63] via-[#FF7A45] to-[#C12A3A] px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-orange-200 dark:shadow-orange-950/40">
+                            {{ $this->excelImportPreview ? 'Crear y continuar' : 'Continuar' }}
                         </button>
                     </div>
                 </div>

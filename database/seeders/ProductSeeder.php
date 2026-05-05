@@ -8,7 +8,7 @@ use Illuminate\Database\Seeder;
 class ProductSeeder extends Seeder
 {
     /**
-     * Seed the products used to calculate rider points by purchased liters.
+     * Seed the products referenced by Excel imports and purchase APIs.
      */
     public function run(): void
     {

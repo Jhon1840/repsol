@@ -20,6 +20,10 @@ class EditRider extends EditRecord
 
     protected ?int $targetPointsBalance = null;
 
+    public ?array $excelImportPreview = null;
+
+    public bool $excelImportConfirmed = false;
+
     public function getTitle(): string
     {
         return 'Editar rider';
@@ -32,6 +36,10 @@ class EditRider extends EditRecord
                 ->label('Subir Excel')
                 ->icon('heroicon-o-document-arrow-up')
                 ->visible(fn (): bool => auth()->user()?->isAdmin() === true)
+                ->beforeFormFilled(function (): void {
+                    $this->excelImportPreview = null;
+                    $this->excelImportConfirmed = false;
+                })
                 ->schema([
                     FileUpload::make('excel')
                         ->label('Archivo Excel')
@@ -39,9 +47,15 @@ class EditRider extends EditRecord
                         ->maxSize(20480)
                         ->required()
                         ->storeFiles(false)
-                        ->helperText('Se leerá la hoja REPORTE A SUBIR y se calculará puntos como Litros comprados x Puntos por litro del producto.'),
+                        ->helperText('Se leerá la hoja REPORTE A SUBIR y se sumarán puntos desde la columna Total Puntos.'),
                 ])
-                ->action(function (array $data): void {
+                ->modalContentFooter(fn () => $this->excelImportPreview
+                    ? view('filament.resources.riders.pages.excel-import-preview', [
+                        'preview' => $this->excelImportPreview,
+                    ])
+                    : null)
+                ->modalSubmitActionLabel(fn (): string => $this->excelImportPreview ? 'Crear y continuar' : 'Continuar')
+                ->action(function (array $data, Action $action): void {
                     if (auth()->user()?->isAdmin() !== true) {
                         Notification::make()
                             ->title('No tienes permisos para subir Excel')
@@ -51,18 +65,36 @@ class EditRider extends EditRecord
                         return;
                     }
 
+                    $metadata = [
+                        'source' => 'rider_edit_upload',
+                        'notes' => 'Carga automatizada de Excel desde la vista del rider.',
+                        'branch_scope' => auth()->user()?->branchScope(),
+                    ];
+
                     try {
+                        if (! $this->excelImportConfirmed) {
+                            $this->excelImportPreview = app(ExcelRiderImportService::class)->previewImport(
+                                $data['excel'],
+                                $this->record,
+                                $metadata,
+                            );
+
+                            if ($this->excelImportPreview['has_new_records'] ?? false) {
+                                $this->excelImportConfirmed = true;
+                                $action->halt();
+                            }
+                        }
+
                         $document = app(ExcelRiderImportService::class)->storeAndImportForRider(
                             $data['excel'],
                             $this->record,
                             auth()->id(),
-                            [
-                                'source' => 'rider_edit_upload',
-                                'notes' => 'Carga automatizada de Excel desde la vista del rider.',
-                                'branch_scope' => auth()->user()?->branchScope(),
-                            ],
+                            $metadata,
                         );
                     } catch (ValidationException $exception) {
+                        $this->excelImportPreview = null;
+                        $this->excelImportConfirmed = false;
+
                         Notification::make()
                             ->title('No se pudo procesar el Excel')
                             ->body(collect($exception->errors())->flatten()->implode(' '))
@@ -71,6 +103,9 @@ class EditRider extends EditRecord
 
                         return;
                     }
+
+                    $this->excelImportPreview = null;
+                    $this->excelImportConfirmed = false;
 
                     $processedItems = count($document->metadata['processed_items'] ?? []);
                     $skippedItems = count($document->metadata['skipped_items'] ?? []);
@@ -92,17 +127,20 @@ class EditRider extends EditRecord
     protected function mutateFormDataBeforeFill(array $data): array
     {
         $data['points_balance'] = (int) $this->record->points_balance;
+        [$data['first_names'], $data['last_names']] = $this->splitFullName($data['name'] ?? '');
+        unset($data['name']);
 
         return $data;
     }
 
     protected function mutateFormDataBeforeSave(array $data): array
     {
+        $data['name'] = $this->buildFullName($data);
         $this->targetPointsBalance = auth()->user()?->isAdmin() === true
             ? (int) ($data['points_balance'] ?? $this->record->points_balance)
             : null;
 
-        unset($data['points_balance']);
+        unset($data['first_names'], $data['last_names'], $data['points_balance']);
 
         return $data;
     }
@@ -151,5 +189,35 @@ class EditRider extends EditRecord
     {
         $this->record->refresh();
         $this->record->loadSum('movements as points_balance', 'points');
+    }
+
+    protected function buildFullName(array $data): string
+    {
+        if (! array_key_exists('first_names', $data) && ! array_key_exists('last_names', $data)) {
+            return trim((string) ($data['name'] ?? ''));
+        }
+
+        return trim(collect([
+            $data['first_names'] ?? null,
+            $data['last_names'] ?? null,
+        ])
+            ->filter(fn (mixed $value): bool => filled($value))
+            ->implode(' '));
+    }
+
+    protected function splitFullName(string $name): array
+    {
+        $parts = preg_split('/\s+/', trim($name)) ?: [];
+
+        if (count($parts) <= 1) {
+            return [$name, ''];
+        }
+
+        $lastNames = array_splice($parts, -2);
+
+        return [
+            implode(' ', $parts),
+            implode(' ', $lastNames),
+        ];
     }
 }

@@ -30,19 +30,41 @@ class RiderForm
                             ->dehydrateStateUsing(fn (mixed $state): ?string => Rider::normalizeRiderId($state))
                             ->mutateStateForValidationUsing(fn (mixed $state): ?string => Rider::normalizeRiderId($state))
                             ->rules([
-                                fn (): \Closure => fn (string $attribute, mixed $value, \Closure $fail) => Rider::normalizeRiderId($value) === Rider::RIDER_ID_PREFIX
-                                    ? $fail('El ID debe incluir números o letras después de PYA.')
-                                    : null,
+                                fn (?Rider $record): \Closure => function (string $attribute, mixed $value, \Closure $fail) use ($record): void {
+                                    $normalizedRiderId = Rider::normalizeRiderId($value);
+
+                                    if ($normalizedRiderId === Rider::RIDER_ID_PREFIX) {
+                                        $fail('El ID debe incluir números o letras después de PYA.');
+
+                                        return;
+                                    }
+
+                                    $exists = Rider::query()
+                                        ->where('rider_id', $normalizedRiderId)
+                                        ->when($record, fn ($query) => $query->whereKeyNot($record->getKey()))
+                                        ->exists();
+
+                                    if ($exists) {
+                                        $fail('Ya existe un rider con este ID.');
+                                    }
+                                },
                             ])
                             ->unique(ignoreRecord: true)
                             ->live(onBlur: true)
                             ->maxLength(255)
                             ->placeholder('12647'),
-                        TextInput::make('name')
-                            ->label('Nombre')
+                        TextInput::make('first_names')
+                            ->label('Nombres')
                             ->required()
+                            ->dehydrated(false)
                             ->maxLength(255)
-                            ->placeholder('SANDRA PARADA CABALLERO'),
+                            ->placeholder('SANDRA'),
+                        TextInput::make('last_names')
+                            ->label('Apellidos')
+                            ->required()
+                            ->dehydrated(false)
+                            ->maxLength(255)
+                            ->placeholder('PARADA CABALLERO'),
                         Select::make('branch')
                             ->label('Sucursal')
                             ->options(User::BRANCH_OPTIONS)

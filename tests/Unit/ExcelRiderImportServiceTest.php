@@ -17,7 +17,7 @@ class ExcelRiderImportServiceTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_it_groups_rows_by_rider_and_branch_and_skips_invalid_points(): void
+    public function test_it_groups_rows_by_rider_and_branch_using_excel_total_points(): void
     {
         $this->createProduct('RPP001', 25);
         $this->createProduct('RPP003', 10);
@@ -39,17 +39,17 @@ class ExcelRiderImportServiceTest extends TestCase
         $this->assertCount(3, $parsed['parsed_riders']);
         $this->assertSame('PYASC00065', $parsed['parsed_riders'][0]['rider_id']);
         $this->assertSame('CENTRAL', $parsed['parsed_riders'][0]['branch']);
-        $this->assertSame(300.0, $parsed['parsed_riders'][0]['points_total']);
+        $this->assertSame(999.0, $parsed['parsed_riders'][0]['points_total']);
         $this->assertSame('Sandra Parada', $parsed['parsed_riders'][0]['rider_name']);
         $this->assertSame(['RPP001'], $parsed['parsed_riders'][0]['article_codes']);
         $this->assertSame('PYASC00065', $parsed['parsed_riders'][1]['rider_id']);
         $this->assertSame('NORTE', $parsed['parsed_riders'][1]['branch']);
-        $this->assertSame(120.0, $parsed['parsed_riders'][1]['points_total']);
+        $this->assertSame(40.0, $parsed['parsed_riders'][1]['points_total']);
         $this->assertSame('PYASC00081', $parsed['parsed_riders'][2]['rider_id']);
         $this->assertSame('SUR', $parsed['parsed_riders'][2]['branch']);
-        $this->assertSame(240.0, $parsed['parsed_riders'][2]['points_total']);
+        $this->assertSame(600.0, $parsed['parsed_riders'][2]['points_total']);
         $this->assertSame('Jorge Mamani', $parsed['parsed_riders'][2]['rider_name']);
-        $this->assertCount(2, $parsed['skipped_items']);
+        $this->assertCount(1, $parsed['skipped_items']);
     }
 
     public function test_it_creates_riders_and_one_movement_per_rider_from_excel(): void
@@ -76,7 +76,7 @@ class ExcelRiderImportServiceTest extends TestCase
         $document = $service->storeAndImport($uploadedFile, null, ['source' => 'test']);
 
         $this->assertSame('processed', $document->status);
-        $this->assertSame(720, $document->metadata['parsed_points']);
+        $this->assertSame(900, $document->metadata['parsed_points']);
         $this->assertCount(2, $document->metadata['processed_items']);
 
         $this->assertDatabaseHas('riders', [
@@ -93,7 +93,7 @@ class ExcelRiderImportServiceTest extends TestCase
             'uploaded_document_id' => $document->getKey(),
             'branch' => 'CENTRAL',
             'movement_type' => 'purchase',
-            'points' => 360,
+            'points' => 500,
         ]);
 
         $this->assertDatabaseHas('rider_movements', [
@@ -101,11 +101,57 @@ class ExcelRiderImportServiceTest extends TestCase
             'uploaded_document_id' => $document->getKey(),
             'branch' => 'NORTE',
             'movement_type' => 'purchase',
-            'points' => 360,
+            'points' => 400,
         ]);
     }
 
-    public function test_it_calculates_points_from_liters_for_excel_without_branch_column(): void
+    public function test_it_previews_new_products_and_riders_before_importing(): void
+    {
+        Storage::fake('local');
+        $this->createProduct('RPP001', 10);
+
+        $service = new ExcelRiderImportService;
+        $uploadedFile = $this->uploadedExcel([
+            ['Sucursal', 'Codigo', 'Nombre del Rider', 'N Documento', 'Articulo', 'Descripcion', 'Cantidad', 'Litros', 'PtsSku', 'Total Puntos'],
+            ['Central', 'SC00065', 'Sandra Parada', 'NV-001', 'RPP001', 'Producto existente', 1, 12, 100, 200],
+            ['Norte', 'SC00099', 'Nuevo Rider', 'NV-002', 'RPP999', 'RACING NUEVO 12X1L', 1, 12, 75, 300],
+        ]);
+
+        $preview = $service->previewImport($uploadedFile);
+
+        $this->assertTrue($preview['has_new_records']);
+        $this->assertSame('PYASC00065', $preview['new_riders'][0]['rider_id']);
+        $this->assertSame('PYASC00099', $preview['new_riders'][1]['rider_id']);
+        $this->assertCount(1, $preview['new_products']);
+        $this->assertSame('RPP999', $preview['new_products'][0]['code']);
+        $this->assertSame('RACING', $preview['new_products'][0]['oil_type']);
+    }
+
+    public function test_it_creates_missing_products_from_excel_data_when_importing(): void
+    {
+        Storage::fake('local');
+
+        $service = new ExcelRiderImportService;
+        $uploadedFile = $this->uploadedExcel([
+            ['Sucursal', 'Codigo', 'Nombre del Rider', 'N Documento', 'Articulo', 'Descripcion', 'Cantidad', 'Litros', 'PtsSku', 'Total Puntos'],
+            ['Central', 'SC00065', 'Sandra Parada', 'NV-001', 'RPP999', 'SMARTER SPORT NUEVO 12X1L', 1, 12, 150, 300],
+        ]);
+
+        $document = $service->storeAndImport($uploadedFile, null, ['source' => 'test']);
+
+        $this->assertDatabaseHas('products', [
+            'code' => 'RPP999',
+            'name' => 'SMARTER SPORT NUEVO 12X1L',
+            'oil_type' => 'SMARTER SPORT',
+            'liters' => 12,
+            'points_per_box' => 150,
+            'points_per_liter' => 25,
+        ]);
+        $this->assertSame('RPP999', $document->metadata['created_products'][0]['code']);
+        $this->assertSame(300, $document->metadata['parsed_points']);
+    }
+
+    public function test_it_reads_total_points_for_excel_without_branch_column(): void
     {
         $this->createProduct('RPP2000MHC', 500);
         $this->createProduct('RPP2064MGB', 300);
@@ -122,7 +168,7 @@ class ExcelRiderImportServiceTest extends TestCase
         $this->assertCount(1, $parsed['parsed_riders']);
         $this->assertSame('PYA12702330', $parsed['parsed_riders'][0]['rider_id']);
         $this->assertNull($parsed['parsed_riders'][0]['branch']);
-        $this->assertSame(12000.0, $parsed['parsed_riders'][0]['points_total']);
+        $this->assertSame(900.0, $parsed['parsed_riders'][0]['points_total']);
         $this->assertSame([], $parsed['skipped_items']);
     }
 
@@ -142,7 +188,7 @@ class ExcelRiderImportServiceTest extends TestCase
 
         $this->assertCount(1, $parsed['parsed_riders']);
         $this->assertSame('PYASCZ001', $parsed['parsed_riders'][0]['rider_id']);
-        $this->assertSame(1200.0, $parsed['parsed_riders'][0]['points_total']);
+        $this->assertSame(100.0, $parsed['parsed_riders'][0]['points_total']);
         $this->assertCount(1, $parsed['skipped_items']);
         $this->assertSame('La fila pertenece a otra sucursal.', $parsed['skipped_items'][0]['reason']);
     }

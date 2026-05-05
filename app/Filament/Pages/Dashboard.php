@@ -31,6 +31,8 @@ class Dashboard extends BaseDashboard
 
     public $pendingExcel = null;
 
+    public ?array $excelImportPreview = null;
+
     public ?string $pointsChartStartDate = null;
 
     public ?string $pointsChartEndDate = null;
@@ -81,11 +83,11 @@ class Dashboard extends BaseDashboard
 
     public function cancelExcelSelection(): void
     {
-        $this->reset('pendingExcel');
+        $this->reset('pendingExcel', 'excelImportPreview');
         $this->dispatch('excel-selection-cancelled');
     }
 
-    public function storeExcel(): void
+    public function storeExcel(bool $confirmed = false): void
     {
         if (! $this->canUploadExcel()) {
             Notification::make()
@@ -100,15 +102,29 @@ class Dashboard extends BaseDashboard
             'pendingExcel' => ['required', 'file', 'mimes:xlsx', 'max:20480'],
         ]);
 
+        $metadata = [
+            'source' => 'dashboard_upload',
+            'notes' => 'Carga automatizada de Excel desde dashboard.',
+            'branch_scope' => auth()->user()?->branchScope(),
+        ];
+
         try {
+            if (! $confirmed) {
+                $this->excelImportPreview = app(ExcelRiderImportService::class)->previewImport(
+                    $this->pendingExcel,
+                    null,
+                    $metadata,
+                );
+
+                if ($this->excelImportPreview['has_new_records'] ?? false) {
+                    return;
+                }
+            }
+
             $document = app(ExcelRiderImportService::class)->storeAndImport(
                 $this->pendingExcel,
                 auth()->id(),
-                [
-                    'source' => 'dashboard_upload',
-                    'notes' => 'Carga automatizada de Excel desde dashboard.',
-                    'branch_scope' => auth()->user()?->branchScope(),
-                ],
+                $metadata,
             );
         } catch (ValidationException $exception) {
             Notification::make()
@@ -120,7 +136,7 @@ class Dashboard extends BaseDashboard
             return;
         }
 
-        $this->reset('pendingExcel');
+        $this->reset('pendingExcel', 'excelImportPreview');
 
         Notification::make()
             ->title('Excel cargado')

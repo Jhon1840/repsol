@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Models\Product;
 use App\Models\Rider;
 use App\Models\RiderMovement;
 use App\Models\UploadedDocument;
@@ -28,6 +27,24 @@ class ExcelRiderImportService
         return $this->storeDocumentAndImport($file, $rider, $uploadedBy, $metadata);
     }
 
+    public function previewImport(UploadedFile $file, ?Rider $targetRider = null, array $metadata = []): array
+    {
+        $path = $file->getRealPath();
+
+        if (! is_string($path) || $path === '') {
+            throw ValidationException::withMessages([
+                'excel' => ['No se pudo leer el archivo Excel seleccionado.'],
+            ]);
+        }
+
+        $branchScope = $this->normalizeBranch($metadata['branch_scope'] ?? null);
+        $parsed = $this->extractImportData($path, $branchScope);
+
+        $this->validateTargetRiderRows($parsed['parsed_riders'], $targetRider);
+
+        return $this->buildCreationPreview($parsed, $targetRider);
+    }
+
     protected function storeDocumentAndImport(UploadedFile $file, ?Rider $targetRider, ?int $uploadedBy, array $metadata = []): UploadedDocument
     {
         $directory = $targetRider ? 'documents/riders' : 'documents/global';
@@ -49,6 +66,9 @@ class ExcelRiderImportService
             return DB::transaction(function () use ($document, $metadata, $targetRider, $uploadedBy): UploadedDocument {
                 $branchScope = $this->normalizeBranch($metadata['branch_scope'] ?? null);
                 $parsed = $this->extractImportData(Storage::disk($document->disk)->path($document->path), $branchScope);
+                $this->validateTargetRiderRows($parsed['parsed_riders'], $targetRider);
+
+                $createdProducts = $this->createMissingProducts($parsed['product_candidates']);
                 $processedItems = [];
                 $skippedItems = $parsed['skipped_items'];
                 $processedPoints = 0;
@@ -121,6 +141,7 @@ class ExcelRiderImportService
                     'status' => $status,
                     'metadata' => array_merge($metadata, [
                         'parsed_riders' => $parsed['parsed_riders'],
+                        'created_products' => $createdProducts,
                         'processed_items' => $processedItems,
                         'skipped_items' => $skippedItems,
                         'parsed_points' => $processedPoints,
@@ -204,11 +225,13 @@ class ExcelRiderImportService
     {
         $parsedRiders = [];
         $skippedItems = [];
+        $productCandidates = [];
         $rowNumber = 0;
         $headers = null;
-        $products = Product::query()
-            ->get()
-            ->keyBy(fn (Product $product): string => $this->normalizeProductCode($product->code));
+        // Calculo anterior por producto:
+        // $products = \App\Models\Product::query()
+        //     ->get()
+        //     ->keyBy(fn (\App\Models\Product $product): string => $this->normalizeProductCode($product->code));
 
         foreach ($rows as $row) {
             $rowNumber++;
@@ -238,6 +261,8 @@ class ExcelRiderImportService
             $articleCode = $this->normalizeProductCode($this->valueFor($values, $headers, 'article_code'));
             $articleDescription = $this->stringValue($this->valueFor($values, $headers, 'article_description'));
             $liters = $this->parsePositiveNumber($this->valueFor($values, $headers, 'liters'));
+            $pointsSku = $this->parsePositiveNumber($this->valueFor($values, $headers, 'points_sku'));
+            $totalPoints = $this->parsePositiveNumber($this->valueFor($values, $headers, 'total_points'));
 
             if ($riderId === null) {
                 continue;
@@ -258,6 +283,22 @@ class ExcelRiderImportService
                 continue;
             }
 
+            if ($articleCode !== null) {
+                $productCandidates[$articleCode] ??= [
+                    'code' => $articleCode,
+                    'name' => $articleDescription ?: $articleCode,
+                    'oil_type' => $this->inferOilType($articleDescription),
+                    'liters' => $liters !== null ? round($liters, 2) : 0.0,
+                    'points_per_box' => $pointsSku !== null ? round($pointsSku, 2) : round((float) ($totalPoints ?? 0), 2),
+                    'points_per_liter' => $liters !== null && $totalPoints !== null
+                        ? round($totalPoints / $liters, 2)
+                        : round((float) ($pointsSku ?? 0), 2),
+                    'row_numbers' => [],
+                ];
+
+                $productCandidates[$articleCode]['row_numbers'][] = $rowNumber;
+            }
+
             $parsedKey = $riderId.'|'.($branch ?? 'SIN SUCURSAL');
 
             if (! isset($parsedRiders[$parsedKey])) {
@@ -273,46 +314,61 @@ class ExcelRiderImportService
                 ];
             }
 
-            if ($articleCode === null || ! $products->has($articleCode)) {
+            if ($totalPoints === null) {
                 $skippedItems[] = [
                     'row_number' => $rowNumber,
                     'rider_id' => $riderId,
                     'branch' => $branch,
                     'article_code' => $articleCode,
                     'article_description' => $articleDescription,
-                    'reason' => 'El articulo no existe en la tabla de productos.',
+                    'points_total_raw' => $this->stringValue($this->valueFor($values, $headers, 'total_points')),
+                    'reason' => 'La columna Total Puntos no contiene un valor numerico positivo.',
                 ];
 
                 continue;
             }
 
-            if ($liters === null) {
-                $skippedItems[] = [
-                    'row_number' => $rowNumber,
-                    'rider_id' => $riderId,
-                    'branch' => $branch,
-                    'article_code' => $articleCode,
-                    'article_description' => $articleDescription,
-                    'liters_raw' => $this->stringValue($this->valueFor($values, $headers, 'liters')),
-                    'reason' => 'La columna Litros no contiene un valor numerico positivo.',
-                ];
+            // Calculo anterior por litros y puntos configurados en productos.
+            // if ($articleCode === null || ! $products->has($articleCode)) {
+            //     $skippedItems[] = [
+            //         'row_number' => $rowNumber,
+            //         'rider_id' => $riderId,
+            //         'branch' => $branch,
+            //         'article_code' => $articleCode,
+            //         'article_description' => $articleDescription,
+            //         'reason' => 'El articulo no existe en la tabla de productos.',
+            //     ];
+            //
+            //     continue;
+            // }
+            //
+            // if ($liters === null) {
+            //     $skippedItems[] = [
+            //         'row_number' => $rowNumber,
+            //         'rider_id' => $riderId,
+            //         'branch' => $branch,
+            //         'article_code' => $articleCode,
+            //         'article_description' => $articleDescription,
+            //         'liters_raw' => $this->stringValue($this->valueFor($values, $headers, 'liters')),
+            //         'reason' => 'La columna Litros no contiene un valor numerico positivo.',
+            //     ];
+            //
+            //     continue;
+            // }
+            //
+            // /** @var \App\Models\Product $product */
+            // $product = $products->get($articleCode);
+            // $pointsPerLiter = (float) $product->points_per_liter;
+            // $points = $liters * $pointsPerLiter;
 
-                continue;
-            }
-
-            /** @var Product $product */
-            $product = $products->get($articleCode);
-            $pointsPerLiter = (float) $product->points_per_liter;
-            $points = $liters * $pointsPerLiter;
-
+            $points = $totalPoints;
             $parsedRiders[$parsedKey]['points_total'] += $points;
             $parsedRiders[$parsedKey]['row_numbers'][] = $rowNumber;
             $parsedRiders[$parsedKey]['line_items'][] = [
                 'row_number' => $rowNumber,
                 'article_code' => $articleCode,
                 'article_description' => $articleDescription,
-                'liters' => round($liters, 2),
-                'points_per_liter' => round($pointsPerLiter, 2),
+                'liters' => $liters !== null ? round($liters, 2) : null,
                 'points' => round($points, 2),
             ];
 
@@ -340,8 +396,97 @@ class ExcelRiderImportService
 
                 return $rider;
             }, $parsedRiders)),
+            'product_candidates' => array_values(array_map(function (array $product): array {
+                $product['row_numbers'] = array_values(array_unique($product['row_numbers']));
+
+                return $product;
+            }, $productCandidates)),
             'skipped_items' => $skippedItems,
         ];
+    }
+
+    protected function buildCreationPreview(array $parsed, ?Rider $targetRider): array
+    {
+        $existingRiderIds = $targetRider
+            ? collect($parsed['parsed_riders'])->pluck('rider_id')->all()
+            : Rider::query()
+                ->whereIn('rider_id', collect($parsed['parsed_riders'])->pluck('rider_id')->all())
+                ->pluck('rider_id')
+                ->all();
+
+        $existingProductCodes = \App\Models\Product::query()
+            ->whereIn('code', collect($parsed['product_candidates'])->pluck('code')->all())
+            ->pluck('code')
+            ->map(fn (string $code): string => $this->normalizeProductCode($code))
+            ->all();
+
+        $newRiders = collect($parsed['parsed_riders'])
+            ->reject(fn (array $rider): bool => in_array($rider['rider_id'], $existingRiderIds, true))
+            ->map(fn (array $rider): array => [
+                'rider_id' => $rider['rider_id'],
+                'rider_name' => $rider['rider_name'],
+                'branch' => $rider['branch'],
+            ])
+            ->values()
+            ->all();
+
+        $newProducts = collect($parsed['product_candidates'])
+            ->reject(fn (array $product): bool => in_array($product['code'], $existingProductCodes, true))
+            ->values()
+            ->all();
+
+        return [
+            'new_riders' => $newRiders,
+            'new_products' => $newProducts,
+            'has_new_records' => $newRiders !== [] || $newProducts !== [],
+        ];
+    }
+
+    protected function createMissingProducts(array $productCandidates): array
+    {
+        $createdProducts = [];
+
+        foreach ($productCandidates as $candidate) {
+            $product = \App\Models\Product::query()->firstOrCreate(
+                ['code' => $candidate['code']],
+                [
+                    'name' => $candidate['name'],
+                    'oil_type' => $candidate['oil_type'],
+                    'liters' => $candidate['liters'],
+                    'points_per_box' => $candidate['points_per_box'],
+                    'points_per_liter' => $candidate['points_per_liter'],
+                ],
+            );
+
+            if ($product->wasRecentlyCreated) {
+                $createdProducts[] = [
+                    'id' => $product->getKey(),
+                    'code' => $product->code,
+                    'name' => $product->name,
+                    'oil_type' => $product->oil_type,
+                    'liters' => (float) $product->liters,
+                    'points_per_box' => (float) $product->points_per_box,
+                    'points_per_liter' => (float) $product->points_per_liter,
+                ];
+            }
+        }
+
+        return $createdProducts;
+    }
+
+    protected function validateTargetRiderRows(array $parsedRiders, ?Rider $targetRider): void
+    {
+        if (! $targetRider) {
+            return;
+        }
+
+        foreach ($parsedRiders as $parsedRider) {
+            if (Rider::normalizeRiderId($parsedRider['rider_id']) !== $targetRider->rider_id) {
+                throw ValidationException::withMessages([
+                    'excel' => ['El Excel contiene filas de otro rider y no coincide con el rider actual.'],
+                ]);
+            }
+        }
     }
 
     protected function resolveRider(array $parsedRider, ?Rider $targetRider): Rider
@@ -407,6 +552,8 @@ class ExcelRiderImportService
                 'ARTICULO', 'CODIGO SAP' => $map['article_code'] = $index,
                 'DESCRIPCION' => $map['article_description'] = $index,
                 'LITROS' => $map['liters'] = $index,
+                'PTSSKU', 'PTS SKU', 'PUNTOS SKU' => $map['points_sku'] = $index,
+                'TOTAL PUNTOS', 'PUNTOS TOTALES' => $map['total_points'] = $index,
                 default => null,
             };
         }
@@ -431,6 +578,8 @@ class ExcelRiderImportService
             'article_code' => $values[4] ?? null,
             'article_description' => $values[5] ?? null,
             'liters' => $values[7] ?? null,
+            'points_sku' => $values[8] ?? null,
+            'total_points' => $values[9] ?? null,
             default => null,
         };
     }
@@ -495,6 +644,23 @@ class ExcelRiderImportService
         $value = $this->stringValue($value);
 
         return $value !== null ? strtoupper($value) : null;
+    }
+
+    protected function inferOilType(?string $description): ?string
+    {
+        if ($description === null) {
+            return null;
+        }
+
+        $normalized = $this->normalizeHeaderValue($description) ?? '';
+
+        foreach (['SMARTER SYNTHETIC', 'SMARTER SPORT', 'RACING', 'QUALIFIER', 'RIDER'] as $oilType) {
+            if (str_contains($normalized, $oilType)) {
+                return $oilType;
+            }
+        }
+
+        return null;
     }
 
     protected function parsePositiveNumber(mixed $value): ?float

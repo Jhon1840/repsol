@@ -104,15 +104,47 @@
                 </div>
 
                 <div class="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-5 text-sm text-slate-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">
-                    El sistema buscará el artículo en la tabla de productos y calculará los puntos como <strong>Litros comprados x Puntos por litro</strong> por rider y sucursal.
+                    El sistema sumará los puntos desde la columna <strong>Total Puntos</strong> por rider y sucursal.
                 </div>
+
+                @if ($this->excelImportPreview)
+                    <div class="mt-4 grid gap-4 md:grid-cols-2">
+                        @if (count($this->excelImportPreview['new_products'] ?? []))
+                            <div class="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-100">
+                                <p class="font-semibold">Productos que se crearán</p>
+                                <ul class="mt-2 space-y-1">
+                                    @foreach (array_slice($this->excelImportPreview['new_products'], 0, 8) as $product)
+                                        <li>{{ $product['code'] }} - {{ $product['name'] }}</li>
+                                    @endforeach
+                                </ul>
+                                @if (count($this->excelImportPreview['new_products']) > 8)
+                                    <p class="mt-2 text-xs">Y {{ count($this->excelImportPreview['new_products']) - 8 }} producto(s) más.</p>
+                                @endif
+                            </div>
+                        @endif
+
+                        @if (count($this->excelImportPreview['new_riders'] ?? []))
+                            <div class="rounded-2xl border border-sky-200 bg-sky-50 p-4 text-sm text-sky-900 dark:border-sky-900/50 dark:bg-sky-950/30 dark:text-sky-100">
+                                <p class="font-semibold">Riders que se crearán</p>
+                                <ul class="mt-2 space-y-1">
+                                    @foreach (array_slice($this->excelImportPreview['new_riders'], 0, 8) as $rider)
+                                        <li>{{ $rider['rider_id'] }} - {{ $rider['rider_name'] ?: 'Sin nombre' }}</li>
+                                    @endforeach
+                                </ul>
+                                @if (count($this->excelImportPreview['new_riders']) > 8)
+                                    <p class="mt-2 text-xs">Y {{ count($this->excelImportPreview['new_riders']) - 8 }} rider(s) más.</p>
+                                @endif
+                            </div>
+                        @endif
+                    </div>
+                @endif
 
                 <div class="mt-5 flex justify-end gap-3">
                     <button type="button" x-on:click="clearSelection(); $wire.cancelExcelSelection()" class="rounded-full border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700 dark:border-slate-700 dark:text-slate-200">
                         Cancelar
                     </button>
-                    <button type="button" wire:click="storeExcel" class="rounded-full bg-gradient-to-r from-[#E6932A] to-[#C12A3A] px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-orange-200 dark:shadow-orange-950/40">
-                        Continuar
+                    <button type="button" wire:click="{{ $this->excelImportPreview ? 'storeExcel(true)' : 'storeExcel' }}" class="rounded-full bg-gradient-to-r from-[#E6932A] to-[#C12A3A] px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-orange-200 dark:shadow-orange-950/40">
+                        {{ $this->excelImportPreview ? 'Crear y continuar' : 'Continuar' }}
                     </button>
                 </div>
             </div>

@@ -57,7 +57,7 @@ class ProductForm
                             ->numeric()
                             ->minValue(0)
                             ->step('0.01')
-                            ->helperText('El Excel se calcula como Litros comprados x Puntos por litro.'),
+                            ->helperText('Campo referencial; la importación toma los puntos desde Total Puntos del Excel.'),
                     ])
                     ->columns(2),
             ]);
