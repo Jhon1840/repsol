@@ -408,6 +408,73 @@ class BranchManagerScopeTest extends TestCase
         ]);
     }
 
+    public function test_manual_rider_creation_persists_combined_names_from_form_state(): void
+    {
+        $user = User::query()->create([
+            'name' => 'Admin Form Crea Rider',
+            'email' => 'admin-form-create-rider@example.com',
+            'password' => 'password',
+            'role' => User::ROLE_ADMIN,
+        ]);
+
+        $this->actingAs($user);
+
+        Livewire::test(CreateRider::class)
+            ->fillForm([
+                'rider_id' => 'FORM001',
+                'first_names' => 'Sandra Maria',
+                'last_names' => 'Parada Caballero',
+                'branch' => 'SANTA CRUZ',
+                'rango' => 'ORO',
+            ])
+            ->call('create')
+            ->assertHasNoFormErrors();
+
+        $this->assertDatabaseHas('riders', [
+            'rider_id' => 'PYAFORM001',
+            'name' => 'Sandra Maria Parada Caballero',
+            'creation_source' => 'manual',
+        ]);
+    }
+
+    public function test_manual_rider_edit_persists_combined_names_from_form_state(): void
+    {
+        $user = User::query()->create([
+            'name' => 'Admin Form Edita Rider',
+            'email' => 'admin-form-edit-rider@example.com',
+            'password' => 'password',
+            'role' => User::ROLE_ADMIN,
+        ]);
+
+        $rider = Rider::query()->create([
+            'rider_id' => 'PYAEDITFORM001',
+            'name' => 'Nombre Original',
+            'branch' => 'SANTA CRUZ',
+            'rango' => 'BRONCE',
+        ]);
+
+        $this->actingAs($user);
+
+        Livewire::test(EditRider::class, ['record' => $rider->getRouteKey()])
+            ->fillForm([
+                'rider_id' => 'EDITFORM001',
+                'first_names' => 'Nombre',
+                'last_names' => 'Actualizado Rider',
+                'branch' => 'LA PAZ',
+                'rango' => 'PLATA',
+                'points_balance' => 0,
+            ])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        $rider->refresh();
+
+        $this->assertSame('Nombre Actualizado Rider', $rider->name);
+        $this->assertSame('PYAEDITFORM001', $rider->rider_id);
+        $this->assertSame('LA PAZ', $rider->branch);
+        $this->assertSame('PLATA', $rider->rango);
+    }
+
     public function test_manual_rider_creation_rejects_duplicate_normalized_id(): void
     {
         $user = User::query()->create([

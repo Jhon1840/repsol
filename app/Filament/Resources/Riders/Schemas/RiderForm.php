@@ -56,13 +56,11 @@ class RiderForm
                         TextInput::make('first_names')
                             ->label('Nombres')
                             ->required()
-                            ->dehydrated(false)
                             ->maxLength(255)
                             ->placeholder('SANDRA'),
                         TextInput::make('last_names')
                             ->label('Apellidos')
                             ->required()
-                            ->dehydrated(false)
                             ->maxLength(255)
                             ->placeholder('PARADA CABALLERO'),
                         Select::make('branch')
