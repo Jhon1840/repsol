@@ -6,12 +6,14 @@ use App\Filament\Resources\Riders\RiderResource;
 use App\Models\Rider;
 use App\Models\RiderMovement;
 use App\Models\UploadedDocument;
+use App\Models\User;
 use App\Services\ExcelRiderImportService;
 use Filament\Actions\Action;
 use Filament\Actions\CreateAction;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ListRecords;
 use Illuminate\Contracts\View\View;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Validation\ValidationException;
 use Livewire\WithFileUploads;
 use OpenSpout\Common\Entity\Row;
@@ -101,7 +103,7 @@ class ListRiders extends ListRecords
                 ->label('Exportar riders')
                 ->icon('heroicon-o-arrow-down-tray')
                 ->color('gray')
-                ->visible(fn (): bool => auth()->user()?->isAdmin() === true)
+                ->visible(fn (): bool => $this->canExportRiders())
                 ->action(fn (): StreamedResponse => $this->exportRiders()),
             CreateAction::make()->label('Crear rider'),
         ];
@@ -109,7 +111,7 @@ class ListRiders extends ListRecords
 
     public function exportRiders(): StreamedResponse
     {
-        abort_unless(auth()->user()?->isAdmin() === true, 403);
+        abort_unless($this->canExportRiders(), 403);
 
         $filename = 'riders-'.now()->format('Y-m-d-His').'.xlsx';
 
@@ -130,10 +132,7 @@ class ListRiders extends ListRecords
                 'Ultima edicion',
             ]));
 
-            Rider::query()
-                ->with(['creator', 'editor'])
-                ->withPointsBalance()
-                ->orderBy('updated_at', 'desc')
+            $this->exportRidersQuery()
                 ->chunk(500, function ($riders) use ($writer): void {
                     foreach ($riders as $rider) {
                         $writer->addRow(Row::fromValues([
@@ -155,6 +154,22 @@ class ListRiders extends ListRecords
         }, $filename, [
             'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         ]);
+    }
+
+    protected function exportRidersQuery(): Builder
+    {
+        return Rider::query()
+            ->visibleTo(auth()->user())
+            ->with(['creator', 'editor'])
+            ->withPointsBalance(auth()->user())
+            ->orderBy('updated_at', 'desc');
+    }
+
+    protected function canExportRiders(): bool
+    {
+        $user = auth()->user();
+
+        return $user?->isAdmin() === true || $user?->role === User::ROLE_MARKETING;
     }
 
     public function getHeader(): ?View
