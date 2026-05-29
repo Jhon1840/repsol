@@ -125,6 +125,106 @@ class BranchManagerScopeTest extends TestCase
         $this->assertNull($user->branchScope());
     }
 
+    public function test_marketing_user_can_export_only_riders_from_their_branch_scope(): void
+    {
+        $user = User::query()->create([
+            'name' => 'Marketing Export SCZ',
+            'email' => 'marketing-export-scz@example.com',
+            'password' => 'password',
+            'role' => User::ROLE_MARKETING,
+            'branch' => 'SANTA CRUZ',
+        ]);
+
+        $santaCruz = Rider::query()->create([
+            'rider_id' => 'EXPORTSCZ001',
+            'name' => 'Export Rider Santa Cruz',
+            'branch' => 'SANTA CRUZ',
+        ]);
+
+        $laPaz = Rider::query()->create([
+            'rider_id' => 'EXPORTLPZ001',
+            'name' => 'Export Rider La Paz',
+            'branch' => 'LA PAZ',
+        ]);
+
+        $this->actingAs($user);
+
+        $page = app(ListRiders::class);
+
+        $canExportMethod = new ReflectionMethod($page, 'canExportRiders');
+        $canExportMethod->setAccessible(true);
+        $exportQueryMethod = new ReflectionMethod($page, 'exportRidersQuery');
+        $exportQueryMethod->setAccessible(true);
+
+        $exportedIds = $exportQueryMethod->invoke($page)
+            ->pluck('rider_id')
+            ->all();
+
+        $this->assertTrue($canExportMethod->invoke($page));
+        $this->assertContains($santaCruz->rider_id, $exportedIds);
+        $this->assertNotContains($laPaz->rider_id, $exportedIds);
+    }
+
+    public function test_marketing_global_user_can_export_riders_from_all_branches(): void
+    {
+        $user = User::query()->create([
+            'name' => 'Marketing Export Global',
+            'email' => 'marketing-export-global@example.com',
+            'password' => 'password',
+            'role' => User::ROLE_MARKETING,
+            'branch' => User::BRANCH_GLOBAL,
+        ]);
+
+        $santaCruz = Rider::query()->create([
+            'rider_id' => 'EXPORTGLOBALSCZ001',
+            'name' => 'Export Global Santa Cruz',
+            'branch' => 'SANTA CRUZ',
+        ]);
+
+        $laPaz = Rider::query()->create([
+            'rider_id' => 'EXPORTGLOBALLPZ001',
+            'name' => 'Export Global La Paz',
+            'branch' => 'LA PAZ',
+        ]);
+
+        $this->actingAs($user);
+
+        $page = app(ListRiders::class);
+
+        $canExportMethod = new ReflectionMethod($page, 'canExportRiders');
+        $canExportMethod->setAccessible(true);
+        $exportQueryMethod = new ReflectionMethod($page, 'exportRidersQuery');
+        $exportQueryMethod->setAccessible(true);
+
+        $exportedIds = $exportQueryMethod->invoke($page)
+            ->pluck('rider_id')
+            ->all();
+
+        $this->assertTrue($canExportMethod->invoke($page));
+        $this->assertContains($santaCruz->rider_id, $exportedIds);
+        $this->assertContains($laPaz->rider_id, $exportedIds);
+    }
+
+    public function test_branch_manager_cannot_export_riders(): void
+    {
+        $user = User::query()->create([
+            'name' => 'Branch Manager Sin Export',
+            'email' => 'branch-manager-no-export@example.com',
+            'password' => 'password',
+            'role' => User::ROLE_BRANCH_MANAGER,
+            'branch' => 'SANTA CRUZ',
+        ]);
+
+        $this->actingAs($user);
+
+        $page = app(ListRiders::class);
+
+        $canExportMethod = new ReflectionMethod($page, 'canExportRiders');
+        $canExportMethod->setAccessible(true);
+
+        $this->assertFalse($canExportMethod->invoke($page));
+    }
+
     public function test_marketing_user_points_balance_is_scoped_to_their_branch(): void
     {
         $user = User::query()->create([
@@ -406,6 +506,73 @@ class BranchManagerScopeTest extends TestCase
             'name' => 'Sandra Maria Parada Caballero',
             'creation_source' => 'manual',
         ]);
+    }
+
+    public function test_manual_rider_creation_persists_combined_names_from_form_state(): void
+    {
+        $user = User::query()->create([
+            'name' => 'Admin Form Crea Rider',
+            'email' => 'admin-form-create-rider@example.com',
+            'password' => 'password',
+            'role' => User::ROLE_ADMIN,
+        ]);
+
+        $this->actingAs($user);
+
+        Livewire::test(CreateRider::class)
+            ->fillForm([
+                'rider_id' => 'FORM001',
+                'first_names' => 'Sandra Maria',
+                'last_names' => 'Parada Caballero',
+                'branch' => 'SANTA CRUZ',
+                'rango' => 'ORO',
+            ])
+            ->call('create')
+            ->assertHasNoFormErrors();
+
+        $this->assertDatabaseHas('riders', [
+            'rider_id' => 'PYAFORM001',
+            'name' => 'Sandra Maria Parada Caballero',
+            'creation_source' => 'manual',
+        ]);
+    }
+
+    public function test_manual_rider_edit_persists_combined_names_from_form_state(): void
+    {
+        $user = User::query()->create([
+            'name' => 'Admin Form Edita Rider',
+            'email' => 'admin-form-edit-rider@example.com',
+            'password' => 'password',
+            'role' => User::ROLE_ADMIN,
+        ]);
+
+        $rider = Rider::query()->create([
+            'rider_id' => 'PYAEDITFORM001',
+            'name' => 'Nombre Original',
+            'branch' => 'SANTA CRUZ',
+            'rango' => 'BRONCE',
+        ]);
+
+        $this->actingAs($user);
+
+        Livewire::test(EditRider::class, ['record' => $rider->getRouteKey()])
+            ->fillForm([
+                'rider_id' => 'EDITFORM001',
+                'first_names' => 'Nombre',
+                'last_names' => 'Actualizado Rider',
+                'branch' => 'LA PAZ',
+                'rango' => 'PLATA',
+                'points_balance' => 0,
+            ])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        $rider->refresh();
+
+        $this->assertSame('Nombre Actualizado Rider', $rider->name);
+        $this->assertSame('PYAEDITFORM001', $rider->rider_id);
+        $this->assertSame('LA PAZ', $rider->branch);
+        $this->assertSame('PLATA', $rider->rango);
     }
 
     public function test_manual_rider_creation_rejects_duplicate_normalized_id(): void
