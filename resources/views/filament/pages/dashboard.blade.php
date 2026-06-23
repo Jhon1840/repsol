@@ -255,30 +255,30 @@
 
                     @if ($this->excelImportPreview)
                         <div class="mt-4 grid gap-4 md:grid-cols-2">
-                            @if (count($this->excelImportPreview['new_products'] ?? []))
+                            @if (($this->excelImportPreview['new_products_count'] ?? count($this->excelImportPreview['new_products'] ?? [])))
                                 <div class="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-100">
                                     <p class="font-semibold">Productos que se crearán</p>
                                     <ul class="mt-2 space-y-1">
-                                        @foreach (array_slice($this->excelImportPreview['new_products'], 0, 8) as $product)
+                                        @foreach ($this->excelImportPreview['new_products'] as $product)
                                             <li>{{ $product['code'] }} - {{ $product['name'] }}</li>
                                         @endforeach
                                     </ul>
-                                    @if (count($this->excelImportPreview['new_products']) > 8)
-                                        <p class="mt-2 text-xs">Y {{ count($this->excelImportPreview['new_products']) - 8 }} producto(s) más.</p>
+                                    @if (($this->excelImportPreview['new_products_count'] ?? count($this->excelImportPreview['new_products'])) > count($this->excelImportPreview['new_products']))
+                                        <p class="mt-2 text-xs">Y {{ ($this->excelImportPreview['new_products_count'] ?? count($this->excelImportPreview['new_products'])) - count($this->excelImportPreview['new_products']) }} producto(s) más.</p>
                                     @endif
                                 </div>
                             @endif
 
-                            @if (count($this->excelImportPreview['new_riders'] ?? []))
+                            @if (($this->excelImportPreview['new_riders_count'] ?? count($this->excelImportPreview['new_riders'] ?? [])))
                                 <div class="rounded-2xl border border-sky-200 bg-sky-50 p-4 text-sm text-sky-900 dark:border-sky-900/50 dark:bg-sky-950/30 dark:text-sky-100">
                                     <p class="font-semibold">Riders que se crearán</p>
                                     <ul class="mt-2 space-y-1">
-                                        @foreach (array_slice($this->excelImportPreview['new_riders'], 0, 8) as $rider)
+                                        @foreach ($this->excelImportPreview['new_riders'] as $rider)
                                             <li>{{ $rider['rider_id'] }} - {{ $rider['rider_name'] ?: 'Sin nombre' }}</li>
                                         @endforeach
                                     </ul>
-                                    @if (count($this->excelImportPreview['new_riders']) > 8)
-                                        <p class="mt-2 text-xs">Y {{ count($this->excelImportPreview['new_riders']) - 8 }} rider(s) más.</p>
+                                    @if (($this->excelImportPreview['new_riders_count'] ?? count($this->excelImportPreview['new_riders'])) > count($this->excelImportPreview['new_riders']))
+                                        <p class="mt-2 text-xs">Y {{ ($this->excelImportPreview['new_riders_count'] ?? count($this->excelImportPreview['new_riders'])) - count($this->excelImportPreview['new_riders']) }} rider(s) más.</p>
                                     @endif
                                 </div>
                             @endif

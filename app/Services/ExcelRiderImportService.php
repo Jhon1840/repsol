@@ -436,8 +436,10 @@ class ExcelRiderImportService
             ->all();
 
         return [
-            'new_riders' => $newRiders,
-            'new_products' => $newProducts,
+            'new_riders' => array_slice($newRiders, 0, 8),
+            'new_products' => array_slice($newProducts, 0, 8),
+            'new_riders_count' => count($newRiders),
+            'new_products_count' => count($newProducts),
             'has_new_records' => $newRiders !== [] || $newProducts !== [],
         ];
     }
@@ -553,7 +555,7 @@ class ExcelRiderImportService
                 'DESCRIPCION' => $map['article_description'] = $index,
                 'LITROS' => $map['liters'] = $index,
                 'PTSSKU', 'PTS SKU', 'PUNTOS SKU' => $map['points_sku'] = $index,
-                'TOTAL PUNTOS', 'PUNTOS TOTALES' => $map['total_points'] = $index,
+                'TOTAL PUNTOS', 'PUNTOS TOTALES', 'TOTAL PUN', 'TOTAL PUR', 'TOTAL PTS', 'TOTALPUNTOS' => $map['total_points'] = $index,
                 default => null,
             };
         }
