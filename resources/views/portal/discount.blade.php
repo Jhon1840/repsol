@@ -180,7 +180,14 @@
                         <strong><span data-discount-total>0</span> puntos</strong>
                     </div>
 
-                    <button type="submit" class="rider-submit-button" @disabled(blank($rider->rango) || $articulos->isEmpty())>
+                    <button
+                        type="submit"
+                        class="rider-submit-button"
+                        data-discount-submit
+                        data-default-label="Descontar puntos"
+                        data-insufficient-label="No tiene puntos suficientes"
+                        @disabled(blank($rider->rango) || $articulos->isEmpty())
+                    >
                         Descontar puntos
                     </button>
 
@@ -220,20 +227,52 @@
                 const label = multiselect.querySelector('[data-multiselect-label]');
                 const options = [...multiselect.querySelectorAll('[data-article-option]')];
                 const totalLabel = document.querySelector('[data-discount-total]');
+                const submitButton = document.querySelector('[data-discount-submit]');
                 const placeholder = 'Selecciona uno o más artículos';
                 const formatter = new Intl.NumberFormat('es-BO');
                 const insufficientPointsText = 'El rider no cuenta con puntos suficientes para este descuento.';
+                const submitDefaultLabel = submitButton?.dataset.defaultLabel || 'Descontar puntos';
+                const submitInsufficientLabel = submitButton?.dataset.insufficientLabel || 'No tiene puntos suficientes';
+                const isSubmitInitiallyDisabled = submitButton?.disabled ?? false;
                 let wasInsufficient = false;
 
                 const sendInsufficientPointsNotification = () => {
-                    if (! window.FilamentNotification) {
+                    if (window.FilamentNotification) {
+                        new window.FilamentNotification()
+                            .title(insufficientPointsText)
+                            .danger()
+                            .send();
+
                         return;
                     }
 
-                    new window.FilamentNotification()
-                        .title(insufficientPointsText)
-                        .danger()
-                        .send();
+                    document.querySelector('[data-insufficient-points-alert]')?.remove();
+
+                    const container = document.querySelector('[data-portal-notifications]')
+                        || document.body.appendChild(document.createElement('div'));
+
+                    container.dataset.portalNotifications = 'true';
+                    container.className = 'fi-no fi-align-end fi-vertical-align-start';
+
+                    const notification = document.createElement('div');
+                    notification.dataset.insufficientPointsAlert = 'true';
+                    notification.className = 'fi-no-notification';
+                    notification.role = 'alert';
+                    notification.style.visibility = 'visible';
+                    notification.innerHTML = `
+                        <div class="fi-no-notification-icon" aria-hidden="true">⚠</div>
+                        <div class="fi-no-notification-main">
+                            <div class="fi-no-notification-text">
+                                <div class="fi-no-notification-title">${insufficientPointsText}</div>
+                                <div class="fi-no-notification-body">Reduce la cantidad o selecciona un artículo de menor valor.</div>
+                            </div>
+                        </div>
+                        <button type="button" class="fi-no-notification-close-btn" aria-label="Cerrar alerta">×</button>
+                    `;
+
+                    notification.querySelector('button')?.addEventListener('click', () => notification.remove());
+                    container.appendChild(notification);
+                    window.setTimeout(() => notification.remove(), 5000);
                 };
 
                 const syncLabel = () => {
@@ -249,13 +288,28 @@
                     label.textContent = selected.length ? selected.join(', ') : placeholder;
                 };
 
-                const syncTotal = () => {
-                    const total = options.reduce((sum, option) => {
+                const calculateTotal = () => {
+                    return options.reduce((sum, option) => {
                         const quantity = Number(option.querySelector('[data-quantity-field]')?.value || 0);
                         const pointCost = Number(option.dataset.pointCost || 0);
 
                         return sum + (quantity * pointCost);
                     }, 0);
+                };
+
+                const syncSubmitButton = (total) => {
+                    if (! submitButton) {
+                        return;
+                    }
+
+                    const isInsufficient = total > riderPointsBalance;
+
+                    submitButton.disabled = isSubmitInitiallyDisabled || isInsufficient;
+                    submitButton.textContent = isInsufficient ? submitInsufficientLabel : submitDefaultLabel;
+                };
+
+                const syncTotal = () => {
+                    const total = calculateTotal();
 
                     if (totalLabel) {
                         totalLabel.textContent = formatter.format(total);
@@ -268,6 +322,7 @@
                     }
 
                     wasInsufficient = isInsufficient;
+                    syncSubmitButton(total);
                 };
 
                 const syncOption = (option) => {
@@ -292,7 +347,18 @@
 
                     buttons.forEach((button) => {
                         button.addEventListener('click', () => {
-                            const nextQuantity = Math.max(0, Number(field.value || 0) + Number(button.dataset.quantityStep));
+                            const currentQuantity = Number(field.value || 0);
+                            const quantityStep = Number(button.dataset.quantityStep);
+                            const nextQuantity = Math.max(0, currentQuantity + quantityStep);
+                            const pointCost = Number(option.dataset.pointCost || 0);
+                            const nextTotal = calculateTotal() + ((nextQuantity - currentQuantity) * pointCost);
+
+                            if (quantityStep > 0 && nextTotal > riderPointsBalance) {
+                                sendInsufficientPointsNotification();
+                                syncSubmitButton(nextTotal);
+
+                                return;
+                            }
 
                             field.value = String(nextQuantity);
                             syncOption(option);
@@ -310,4 +376,3 @@
         })();
     </script>
 </x-portal.layout>
-
