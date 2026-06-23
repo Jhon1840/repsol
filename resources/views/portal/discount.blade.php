@@ -242,9 +242,39 @@
                             .title(insufficientPointsText)
                             .danger()
                             .send();
+
+                        return;
                     }
 
-                    window.alert(insufficientPointsText);
+                    document.querySelector('[data-insufficient-points-alert]')?.remove();
+
+                    const container = document.querySelector('[data-portal-notifications]')
+                        || document.body.appendChild(document.createElement('div'));
+
+                    container.dataset.portalNotifications = 'true';
+                    container.className = 'fi-no fi-align-end fi-vertical-align-start';
+                    container.setAttribute('aria-live', 'assertive');
+                    container.setAttribute('aria-atomic', 'true');
+
+                    const notification = document.createElement('div');
+                    notification.dataset.insufficientPointsAlert = 'true';
+                    notification.className = 'fi-no-notification';
+                    notification.role = 'alert';
+                    notification.style.visibility = 'visible';
+                    notification.innerHTML = `
+                        <div class="fi-no-notification-icon" aria-hidden="true">⚠</div>
+                        <div class="fi-no-notification-main">
+                            <div class="fi-no-notification-text">
+                                <div class="fi-no-notification-title">${insufficientPointsText}</div>
+                                <div class="fi-no-notification-body">Reduce la cantidad o selecciona un artículo de menor valor.</div>
+                            </div>
+                        </div>
+                        <button type="button" class="fi-no-notification-close-btn" aria-label="Cerrar alerta">×</button>
+                    `;
+
+                    notification.querySelector('button')?.addEventListener('click', () => notification.remove());
+                    container.appendChild(notification);
+                    window.setTimeout(() => notification.remove(), 5000);
                 };
 
                 const syncLabel = () => {
