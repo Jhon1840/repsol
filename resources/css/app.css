@@ -1004,6 +1004,89 @@
         color: rgba(226, 232, 240, 0.74);
     }
 
+    .rider-points-alert-backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: 60;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(2, 6, 23, 0.72);
+        padding: 1.5rem;
+        backdrop-filter: blur(6px);
+    }
+
+    .rider-points-alert {
+        display: grid;
+        width: min(100%, 24rem);
+        gap: 1rem;
+        justify-items: center;
+        border: 1px solid rgba(248, 113, 113, 0.28);
+        border-radius: 1.25rem;
+        background:
+            radial-gradient(circle at top left, rgba(248, 113, 113, 0.2), transparent 42%),
+            #0f172a;
+        padding: 1.5rem;
+        color: white;
+        text-align: center;
+        box-shadow: 0 28px 70px -28px rgba(0, 0, 0, 0.9);
+    }
+
+    .rider-points-alert-icon {
+        display: inline-flex;
+        width: 3rem;
+        height: 3rem;
+        align-items: center;
+        justify-content: center;
+        border: 2px solid rgba(248, 113, 113, 0.9);
+        border-radius: 999px;
+        color: #f87171;
+        font-size: 1.6rem;
+        font-weight: 900;
+        line-height: 1;
+    }
+
+    .rider-points-alert-content {
+        display: grid;
+        gap: 0.4rem;
+    }
+
+    .rider-points-alert-content h2,
+    .rider-points-alert-content p {
+        margin: 0;
+    }
+
+    .rider-points-alert-content h2 {
+        font-size: 1.3rem;
+        font-weight: 900;
+    }
+
+    .rider-points-alert-content p {
+        color: rgba(255, 255, 255, 0.88);
+        font-size: 1rem;
+        font-weight: 800;
+        line-height: 1.45;
+    }
+
+    .rider-points-alert-content small {
+        color: rgba(226, 232, 240, 0.72);
+        font-size: 0.82rem;
+        line-height: 1.4;
+    }
+
+    .rider-points-alert-button {
+        width: 100%;
+        border: 0;
+        border-radius: 0.9rem;
+        background: var(--repsol-gradient);
+        padding: 0.85rem 1rem;
+        color: white;
+        font-size: 0.95rem;
+        font-weight: 900;
+        cursor: pointer;
+        box-shadow: 0 16px 34px -20px rgba(193, 42, 58, 0.9);
+    }
+
     .rider-error-message {
         border-radius: 0.9rem;
         border: 1px solid rgba(193, 42, 58, 0.18);
