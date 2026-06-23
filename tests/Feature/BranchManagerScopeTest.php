@@ -3,10 +3,14 @@
 namespace Tests\Feature;
 
 use App\Filament\Pages\Dashboard;
+use App\Filament\Resources\Articulos\ArticulosResource;
+use App\Filament\Resources\Products\ProductResource;
 use App\Filament\Resources\Riders\Pages\CreateRider;
 use App\Filament\Resources\Riders\Pages\EditRider;
 use App\Filament\Resources\Riders\Pages\ListRiders;
+use App\Filament\Resources\Riders\RiderResource;
 use App\Models\Rider;
+use App\Models\RiderAuditLog;
 use App\Models\RiderMovement;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -371,6 +375,33 @@ class BranchManagerScopeTest extends TestCase
         ]);
     }
 
+    public function test_two_word_rider_name_is_split_between_first_and_last_name_on_edit(): void
+    {
+        $user = User::query()->create([
+            'name' => 'Admin Edita Nombre Corto',
+            'email' => 'admin-edit-short-name@example.com',
+            'password' => 'password',
+            'role' => User::ROLE_ADMIN,
+        ]);
+
+        $this->actingAs($user);
+
+        $rider = Rider::query()->create([
+            'rider_id' => 'SHORTNAME001',
+            'name' => 'carlos arce',
+            'branch' => 'LA PAZ',
+            'rango' => 'BRONCE',
+            'created_by' => $user->getKey(),
+            'creation_source' => 'manual',
+        ]);
+
+        Livewire::test(EditRider::class, ['record' => $rider->getRouteKey()])
+            ->assertFormSet([
+                'first_names' => 'carlos',
+                'last_names' => 'arce',
+            ]);
+    }
+
     public function test_manual_rider_creation_combines_first_names_and_last_names(): void
     {
         $user = User::query()->create([
@@ -408,6 +439,111 @@ class BranchManagerScopeTest extends TestCase
         ]);
     }
 
+    public function test_manual_rider_creation_rejects_numeric_only_name_parts(): void
+    {
+        $user = User::query()->create([
+            'name' => 'Admin Rechaza Ceros',
+            'email' => 'admin-reject-zero-rider@example.com',
+            'password' => 'password',
+            'role' => User::ROLE_ADMIN,
+        ]);
+
+        $this->actingAs($user);
+
+        Livewire::test(CreateRider::class)
+            ->fillForm([
+                'rider_id' => 'ZERO001',
+                'first_names' => 'Juan1',
+                'last_names' => 'Perez2',
+                'branch' => 'LA PAZ',
+                'rango' => 'BRONCE',
+            ])
+            ->call('create')
+            ->assertHasFormErrors([
+                'first_names',
+                'last_names',
+            ]);
+
+        $this->assertDatabaseMissing('riders', [
+            'rider_id' => 'PYAZERO001',
+        ]);
+    }
+
+    public function test_rider_updates_are_written_to_audit_log(): void
+    {
+        $user = User::query()->create([
+            'name' => 'Admin Audita Rider',
+            'email' => 'admin-audit-rider@example.com',
+            'password' => 'password',
+            'role' => User::ROLE_ADMIN,
+        ]);
+
+        $this->actingAs($user);
+
+        $rider = Rider::query()->create([
+            'rider_id' => 'AUDIT001',
+            'name' => 'Nombre Original',
+            'branch' => 'LA PAZ',
+            'rango' => 'BRONCE',
+            'created_by' => $user->getKey(),
+            'creation_source' => 'manual',
+        ]);
+
+        $rider->update([
+            'name' => 'Nombre Actualizado',
+            'rango' => 'PLATA',
+            'updated_by' => $user->getKey(),
+        ]);
+
+        $createdLog = RiderAuditLog::query()
+            ->where('rider_id', $rider->getKey())
+            ->where('event', 'created')
+            ->firstOrFail();
+        $updatedLog = RiderAuditLog::query()
+            ->where('rider_id', $rider->getKey())
+            ->where('event', 'updated')
+            ->firstOrFail();
+
+        $this->assertSame($user->getKey(), $createdLog->user_id);
+        $this->assertSame($user->getKey(), $updatedLog->user_id);
+        $this->assertSame('Nombre Original', $updatedLog->old_values['name']);
+        $this->assertSame('Nombre Actualizado', $updatedLog->new_values['name']);
+        $this->assertSame('BRONCE', $updatedLog->old_values['rango']);
+        $this->assertSame('PLATA', $updatedLog->new_values['rango']);
+    }
+
+    public function test_rider_detail_renders_audit_logs(): void
+    {
+        $user = User::query()->create([
+            'name' => 'Admin Ve Audit Logs',
+            'email' => 'admin-view-audit-rider@example.com',
+            'password' => 'password',
+            'role' => User::ROLE_ADMIN,
+        ]);
+
+        $this->actingAs($user);
+
+        $rider = Rider::query()->create([
+            'rider_id' => 'AUDITVIEW001',
+            'name' => 'Nombre Original',
+            'branch' => 'LA PAZ',
+            'rango' => 'BRONCE',
+            'created_by' => $user->getKey(),
+            'creation_source' => 'manual',
+        ]);
+
+        $rider->update([
+            'name' => 'Nombre Cambiado',
+            'updated_by' => $user->getKey(),
+        ]);
+
+        $this->get(RiderResource::getUrl('view', ['record' => $rider]))
+            ->assertOk()
+            ->assertSee('Audit logs del rider')
+            ->assertSee('Nombre Original')
+            ->assertSee('Nombre Cambiado');
+    }
+
     public function test_manual_rider_creation_rejects_duplicate_normalized_id(): void
     {
         $user = User::query()->create([
@@ -438,5 +574,166 @@ class BranchManagerScopeTest extends TestCase
             ->assertHasFormErrors(['rider_id']);
 
         $this->assertDatabaseCount('riders', 1);
+    }
+
+    public function test_advisor_can_access_panel_and_only_see_their_created_riders(): void
+    {
+        $advisor = User::query()->create([
+            'name' => 'Asesor Uno',
+            'email' => 'asesor-uno@example.com',
+            'password' => 'password',
+            'role' => User::ROLE_ADVISOR,
+        ]);
+
+        $otherAdvisor = User::query()->create([
+            'name' => 'Asesor Dos',
+            'email' => 'asesor-dos@example.com',
+            'password' => 'password',
+            'role' => User::ROLE_ADVISOR,
+        ]);
+
+        $ownRider = Rider::query()->create([
+            'rider_id' => 'ADV001',
+            'name' => 'Rider Propio',
+            'branch' => 'SANTA CRUZ',
+            'rango' => 'ORO',
+            'created_by' => $advisor->getKey(),
+            'creation_source' => 'manual',
+        ]);
+
+        $otherRider = Rider::query()->create([
+            'rider_id' => 'ADV002',
+            'name' => 'Rider Ajeno',
+            'branch' => 'SANTA CRUZ',
+            'rango' => 'ORO',
+            'created_by' => $otherAdvisor->getKey(),
+            'creation_source' => 'manual',
+        ]);
+
+        $this->actingAs($advisor);
+
+        $visibleIds = Rider::query()
+            ->visibleTo($advisor)
+            ->pluck('rider_id')
+            ->all();
+
+        $this->assertTrue($advisor->canAccessPanel(filament()->getDefaultPanel()));
+        $this->assertContains($ownRider->rider_id, $visibleIds);
+        $this->assertNotContains($otherRider->rider_id, $visibleIds);
+        $this->assertTrue(RiderResource::canCreate());
+        $this->assertTrue(RiderResource::canEdit($ownRider));
+        $this->assertTrue(RiderResource::canDelete($ownRider));
+        $this->assertFalse(RiderResource::canEdit($otherRider));
+        $this->assertFalse(RiderResource::canDelete($otherRider));
+        $this->assertFalse(ProductResource::canViewAny());
+        $this->assertFalse(ArticulosResource::canViewAny());
+    }
+
+    public function test_advisor_dashboard_totals_are_limited_to_their_created_riders(): void
+    {
+        $advisor = User::query()->create([
+            'name' => 'Asesor Dashboard',
+            'email' => 'asesor-dashboard@example.com',
+            'password' => 'password',
+            'role' => User::ROLE_ADVISOR,
+        ]);
+
+        $otherAdvisor = User::query()->create([
+            'name' => 'Asesor Otro Dashboard',
+            'email' => 'asesor-other-dashboard@example.com',
+            'password' => 'password',
+            'role' => User::ROLE_ADVISOR,
+        ]);
+
+        $ownRider = Rider::query()->create([
+            'rider_id' => 'ADVDASH001',
+            'name' => 'Rider Dashboard Propio',
+            'branch' => 'SANTA CRUZ',
+            'rango' => 'ORO',
+            'created_by' => $advisor->getKey(),
+            'creation_source' => 'manual',
+        ]);
+
+        $otherRider = Rider::query()->create([
+            'rider_id' => 'ADVDASH002',
+            'name' => 'Rider Dashboard Ajeno',
+            'branch' => 'SANTA CRUZ',
+            'rango' => 'ORO',
+            'created_by' => $otherAdvisor->getKey(),
+            'creation_source' => 'manual',
+        ]);
+
+        RiderMovement::query()->create([
+            'rider_id' => $ownRider->getKey(),
+            'branch' => 'SANTA CRUZ',
+            'movement_type' => 'purchase',
+            'points' => 100,
+            'occurred_at' => now(),
+        ]);
+
+        RiderMovement::query()->create([
+            'rider_id' => $otherRider->getKey(),
+            'branch' => 'SANTA CRUZ',
+            'movement_type' => 'purchase',
+            'points' => 900,
+            'occurred_at' => now(),
+        ]);
+
+        $this->actingAs($advisor);
+
+        $page = app(Dashboard::class);
+        $method = new ReflectionMethod($page, 'movementQuery');
+        $method->setAccessible(true);
+
+        $this->assertSame(100, (int) $method->invoke($page)->sum('points'));
+    }
+
+    public function test_rider_export_query_can_filter_by_creator_role(): void
+    {
+        $admin = User::query()->create([
+            'name' => 'Admin Exporta',
+            'email' => 'admin-export@example.com',
+            'password' => 'password',
+            'role' => User::ROLE_ADMIN,
+        ]);
+
+        $advisor = User::query()->create([
+            'name' => 'Asesor Exporta',
+            'email' => 'advisor-export@example.com',
+            'password' => 'password',
+            'role' => User::ROLE_ADVISOR,
+        ]);
+
+        $adminRider = Rider::query()->create([
+            'rider_id' => 'EXPORTADMIN001',
+            'name' => 'Rider Admin Export',
+            'branch' => 'SANTA CRUZ',
+            'rango' => 'ORO',
+            'created_by' => $admin->getKey(),
+            'creation_source' => 'manual',
+        ]);
+
+        $advisorRider = Rider::query()->create([
+            'rider_id' => 'EXPORTADVISOR001',
+            'name' => 'Rider Asesor Export',
+            'branch' => 'SANTA CRUZ',
+            'rango' => 'ORO',
+            'created_by' => $advisor->getKey(),
+            'creation_source' => 'manual',
+        ]);
+
+        $this->actingAs($admin);
+
+        $page = app(ListRiders::class);
+        $method = new ReflectionMethod($page, 'exportRidersQuery');
+        $method->setAccessible(true);
+
+        $allExportIds = $method->invoke($page)->pluck('rider_id')->all();
+        $advisorExportIds = $method->invoke($page, User::ROLE_ADVISOR)->pluck('rider_id')->all();
+
+        $this->assertContains($adminRider->rider_id, $allExportIds);
+        $this->assertContains($advisorRider->rider_id, $allExportIds);
+        $this->assertNotContains($adminRider->rider_id, $advisorExportIds);
+        $this->assertContains($advisorRider->rider_id, $advisorExportIds);
     }
 }

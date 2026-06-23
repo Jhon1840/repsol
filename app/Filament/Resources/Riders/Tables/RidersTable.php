@@ -101,12 +101,14 @@ class RidersTable
 
         return collect([
             ...Rider::query()
+                ->visibleTo(auth()->user())
                 ->whereNotNull('branch')
                 ->distinct()
                 ->orderBy('branch')
                 ->pluck('branch')
                 ->all(),
             ...RiderMovement::query()
+                ->whereHas('rider', fn (Builder $query): Builder => $query->visibleTo(auth()->user()))
                 ->whereNotNull('branch')
                 ->distinct()
                 ->orderBy('branch')

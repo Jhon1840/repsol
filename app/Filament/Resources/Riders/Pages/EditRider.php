@@ -136,6 +136,7 @@ class EditRider extends EditRecord
     protected function mutateFormDataBeforeSave(array $data): array
     {
         $data['name'] = $this->buildFullName($data);
+        $this->validateFullName($data['name']);
         $this->targetPointsBalance = auth()->user()?->isAdmin() === true
             ? (int) ($data['points_balance'] ?? $this->record->points_balance)
             : null;
@@ -213,11 +214,25 @@ class EditRider extends EditRecord
             return [$name, ''];
         }
 
+        if (count($parts) === 2) {
+            return [$parts[0], $parts[1]];
+        }
+
         $lastNames = array_splice($parts, -2);
 
         return [
             implode(' ', $parts),
             implode(' ', $lastNames),
         ];
+    }
+
+    protected function validateFullName(string $name): void
+    {
+        if ($name === '' || preg_match('/^[\pL\s]+$/u', $name) !== 1) {
+            throw ValidationException::withMessages([
+                'data.first_names' => 'Revisa los nombres del rider. Solo se permiten letras y espacios.',
+                'data.last_names' => 'Revisa los apellidos del rider. Solo se permiten letras y espacios.',
+            ]);
+        }
     }
 }

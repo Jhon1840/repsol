@@ -56,13 +56,23 @@ class RiderForm
                         TextInput::make('first_names')
                             ->label('Nombres')
                             ->required()
-                            ->dehydrated(false)
+                            ->dehydrateStateUsing(fn (mixed $state): string => trim((string) $state))
+                            ->rule('regex:/^[\pL\s]+$/u')
+                            ->validationMessages([
+                                'regex' => 'Los nombres solo pueden contener letras y espacios.',
+                            ])
+                            ->autocomplete(false)
                             ->maxLength(255)
                             ->placeholder('SANDRA'),
                         TextInput::make('last_names')
                             ->label('Apellidos')
                             ->required()
-                            ->dehydrated(false)
+                            ->dehydrateStateUsing(fn (mixed $state): string => trim((string) $state))
+                            ->rule('regex:/^[\pL\s]+$/u')
+                            ->validationMessages([
+                                'regex' => 'Los apellidos solo pueden contener letras y espacios.',
+                            ])
+                            ->autocomplete(false)
                             ->maxLength(255)
                             ->placeholder('PARADA CABALLERO'),
                         Select::make('branch')

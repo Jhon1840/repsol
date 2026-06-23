@@ -29,9 +29,16 @@ class Rider extends Model
         'creation_source',
     ];
 
+    protected array $auditOriginalValues = [];
+
     public function movements(): HasMany
     {
         return $this->hasMany(RiderMovement::class);
+    }
+
+    public function auditLogs(): HasMany
+    {
+        return $this->hasMany(RiderAuditLog::class)->latest('occurred_at');
     }
 
     public function documents(): HasMany
@@ -107,6 +114,10 @@ class Rider extends Model
 
     public function scopeVisibleTo(Builder $query, ?User $user): Builder
     {
+        if ($user?->isAdvisor()) {
+            return $query->where('created_by', $user->getKey());
+        }
+
         if (! $branch = $user?->branchScope()) {
             return $query;
         }
@@ -139,5 +150,76 @@ class Rider extends Model
         return Attribute::make(
             set: fn (mixed $value): ?string => self::normalizeRiderId($value),
         );
+    }
+
+    protected static function booted(): void
+    {
+        static::created(function (Rider $rider): void {
+            $rider->writeAuditLog('created', [], $rider->auditSnapshot());
+        });
+
+        static::updating(function (Rider $rider): void {
+            $rider->auditOriginalValues = collect($rider->getDirty())
+                ->keys()
+                ->intersect($rider->auditedAttributes())
+                ->mapWithKeys(fn (string $attribute): array => [$attribute => $rider->getOriginal($attribute)])
+                ->all();
+        });
+
+        static::updated(function (Rider $rider): void {
+            if ($rider->auditOriginalValues === []) {
+                return;
+            }
+
+            $newValues = collect($rider->auditOriginalValues)
+                ->keys()
+                ->mapWithKeys(fn (string $attribute): array => [$attribute => $rider->getAttribute($attribute)])
+                ->all();
+
+            $rider->writeAuditLog('updated', $rider->auditOriginalValues, $newValues);
+            $rider->auditOriginalValues = [];
+        });
+
+        static::deleting(function (Rider $rider): void {
+            $rider->writeAuditLog('deleted', $rider->auditSnapshot(), []);
+        });
+    }
+
+    protected function auditedAttributes(): array
+    {
+        return [
+            'rider_id',
+            'name',
+            'branch',
+            'rango',
+            'created_by',
+            'updated_by',
+            'creation_source',
+        ];
+    }
+
+    protected function auditSnapshot(): array
+    {
+        return collect($this->only($this->auditedAttributes()))
+            ->filter(fn (mixed $value): bool => $value !== null)
+            ->all();
+    }
+
+    protected function writeAuditLog(string $event, array $oldValues, array $newValues): void
+    {
+        RiderAuditLog::query()->create([
+            'rider_id' => $this->getKey(),
+            'rider_code' => $this->rider_id,
+            'rider_name' => $this->name,
+            'user_id' => auth()->id(),
+            'event' => $event,
+            'old_values' => $oldValues,
+            'new_values' => $newValues,
+            'ip_address' => request()?->ip(),
+            'user_agent' => request()?->userAgent(),
+            'url' => request()?->fullUrl(),
+            'method' => request()?->method(),
+            'occurred_at' => now(),
+        ]);
     }
 }

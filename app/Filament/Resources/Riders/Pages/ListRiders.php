@@ -6,12 +6,15 @@ use App\Filament\Resources\Riders\RiderResource;
 use App\Models\Rider;
 use App\Models\RiderMovement;
 use App\Models\UploadedDocument;
+use App\Models\User;
 use App\Services\ExcelRiderImportService;
 use Filament\Actions\Action;
 use Filament\Actions\CreateAction;
+use Filament\Forms\Components\Select;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ListRecords;
 use Illuminate\Contracts\View\View;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Validation\ValidationException;
 use Livewire\WithFileUploads;
 use OpenSpout\Common\Entity\Row;
@@ -102,18 +105,26 @@ class ListRiders extends ListRecords
                 ->icon('heroicon-o-arrow-down-tray')
                 ->color('gray')
                 ->visible(fn (): bool => auth()->user()?->isAdmin() === true)
-                ->action(fn (): StreamedResponse => $this->exportRiders()),
+                ->schema([
+                    Select::make('creator_role')
+                        ->label('Rol que creó al rider')
+                        ->placeholder('Todos los riders')
+                        ->options($this->creatorRoleOptions())
+                        ->native(false),
+                ])
+                ->modalSubmitActionLabel('Exportar')
+                ->action(fn (array $data): StreamedResponse => $this->exportRiders($data['creator_role'] ?? null)),
             CreateAction::make()->label('Crear rider'),
         ];
     }
 
-    public function exportRiders(): StreamedResponse
+    public function exportRiders(?string $creatorRole = null): StreamedResponse
     {
         abort_unless(auth()->user()?->isAdmin() === true, 403);
 
         $filename = 'riders-'.now()->format('Y-m-d-His').'.xlsx';
 
-        return response()->streamDownload(function (): void {
+        return response()->streamDownload(function () use ($creatorRole): void {
             $writer = new Writer;
             $writer->openToFile('php://output');
 
@@ -130,10 +141,7 @@ class ListRiders extends ListRecords
                 'Ultima edicion',
             ]));
 
-            Rider::query()
-                ->with(['creator', 'editor'])
-                ->withPointsBalance()
-                ->orderBy('updated_at', 'desc')
+            $this->exportRidersQuery($creatorRole)
                 ->chunk(500, function ($riders) use ($writer): void {
                     foreach ($riders as $rider) {
                         $writer->addRow(Row::fromValues([
@@ -157,6 +165,26 @@ class ListRiders extends ListRecords
         ]);
     }
 
+    protected function exportRidersQuery(?string $creatorRole = null): Builder
+    {
+        return Rider::query()
+            ->with(['creator', 'editor'])
+            ->withPointsBalance()
+            ->when(filled($creatorRole), fn (Builder $query): Builder => $query
+                ->whereHas('creator', fn (Builder $query): Builder => $query->where('role', $creatorRole)))
+            ->orderBy('updated_at', 'desc');
+    }
+
+    protected function creatorRoleOptions(): array
+    {
+        return [
+            User::ROLE_ADMIN => 'Admin',
+            User::ROLE_MARKETING => 'Marketing',
+            User::ROLE_BRANCH_MANAGER => 'Encargado de sucursal',
+            User::ROLE_ADVISOR => 'Asesor',
+        ];
+    }
+
     public function getHeader(): ?View
     {
         return view('filament.resources.riders.pages.list-riders-header', [
@@ -172,24 +200,14 @@ class ListRiders extends ListRecords
 
     protected function movementQuery()
     {
-        $query = RiderMovement::query();
-        $branch = auth()->user()?->branchScope();
-
-        return $branch === null
-            ? $query
-            : $query->whereHas('rider', fn ($query) => $query->where('branch', $branch));
+        return RiderMovement::query()
+            ->whereHas('rider', fn ($query) => $query->visibleTo(auth()->user()));
     }
 
     protected function documentQuery()
     {
-        $query = UploadedDocument::query();
-        $branch = auth()->user()?->branchScope();
-
-        if ($branch === null) {
-            return $query;
-        }
-
-        return $query->whereHas('rider', fn ($query) => $query->where('branch', $branch));
+        return UploadedDocument::query()
+            ->visibleTo(auth()->user());
     }
 
     protected function buildUploadMessage(UploadedDocument $document): string

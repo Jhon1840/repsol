@@ -58,36 +58,41 @@ class ProductResource extends Resource
 
     public static function canViewAny(): bool
     {
-        return auth()->check();
+        return auth()->check() && ! static::isAdvisor();
     }
 
     public static function canView(Model $record): bool
     {
-        return auth()->check();
+        return auth()->check() && ! static::isAdvisor();
     }
 
     public static function canCreate(): bool
     {
-        return ! static::isBranchManager();
+        return ! static::isBranchManager() && ! static::isAdvisor();
     }
 
     public static function canEdit(Model $record): bool
     {
-        return ! static::isBranchManager();
+        return ! static::isBranchManager() && ! static::isAdvisor();
     }
 
     public static function canDelete(Model $record): bool
     {
-        return ! static::isBranchManager();
+        return ! static::isBranchManager() && ! static::isAdvisor();
     }
 
     public static function canDeleteAny(): bool
     {
-        return ! static::isBranchManager();
+        return ! static::isBranchManager() && ! static::isAdvisor();
     }
 
     protected static function isBranchManager(): bool
     {
         return auth()->user()?->role === User::ROLE_BRANCH_MANAGER;
+    }
+
+    protected static function isAdvisor(): bool
+    {
+        return auth()->user()?->isAdvisor() === true;
     }
 }

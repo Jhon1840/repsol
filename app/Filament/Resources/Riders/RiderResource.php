@@ -16,6 +16,7 @@ use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 
 class RiderResource extends Resource
 {
@@ -66,5 +67,54 @@ class RiderResource extends Resource
         return parent::getEloquentQuery()
             ->visibleTo(auth()->user())
             ->withPointsBalance(auth()->user());
+    }
+
+    public static function canAccess(): bool
+    {
+        return auth()->check();
+    }
+
+    public static function canViewAny(): bool
+    {
+        return auth()->check();
+    }
+
+    public static function canView(Model $record): bool
+    {
+        return static::canManageRecord($record);
+    }
+
+    public static function canCreate(): bool
+    {
+        return auth()->check();
+    }
+
+    public static function canEdit(Model $record): bool
+    {
+        return static::canManageRecord($record);
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        return static::canManageRecord($record);
+    }
+
+    protected static function canManageRecord(Model $record): bool
+    {
+        $user = auth()->user();
+
+        if (! $user) {
+            return false;
+        }
+
+        if ($user->isAdvisor()) {
+            return (int) $record->created_by === (int) $user->getKey();
+        }
+
+        return $record instanceof Rider
+            && Rider::query()
+                ->visibleTo($user)
+                ->whereKey($record->getKey())
+                ->exists();
     }
 }

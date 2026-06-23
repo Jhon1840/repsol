@@ -28,12 +28,13 @@ class UserForm
                                 User::ROLE_ADMIN => 'Admin',
                                 User::ROLE_MARKETING => 'Marketing',
                                 User::ROLE_BRANCH_MANAGER => 'Encargado de sucursal',
+                                User::ROLE_ADVISOR => 'Asesor',
                             ])
                             ->required()
                             ->native(false)
                             ->live()
                             ->afterStateUpdated(function ($state, $set, $get): void {
-                                if ($state === User::ROLE_ADMIN) {
+                                if (in_array($state, [User::ROLE_ADMIN, User::ROLE_ADVISOR], true)) {
                                     $set('branch', null);
 
                                     return;

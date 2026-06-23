@@ -237,24 +237,14 @@ class Dashboard extends BaseDashboard
 
     protected function movementQuery()
     {
-        $query = RiderMovement::query();
-        $branch = auth()->user()?->branchScope();
-
-        return $branch === null
-            ? $query
-            : $query->whereHas('rider', fn ($query) => $query->where('branch', $branch));
+        return RiderMovement::query()
+            ->whereHas('rider', fn ($query) => $query->visibleTo(auth()->user()));
     }
 
     protected function documentQuery()
     {
-        $query = UploadedDocument::query();
-        $branch = auth()->user()?->branchScope();
-
-        if ($branch === null) {
-            return $query;
-        }
-
-        return $query->whereHas('rider', fn ($query) => $query->where('branch', $branch));
+        return UploadedDocument::query()
+            ->visibleTo(auth()->user());
     }
 
     private function setDefaultPointsChartFilters(): void

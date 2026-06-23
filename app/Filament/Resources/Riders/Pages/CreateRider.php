@@ -5,6 +5,7 @@ namespace App\Filament\Resources\Riders\Pages;
 use App\Filament\Resources\Riders\RiderResource;
 use App\Models\Rider;
 use Filament\Resources\Pages\CreateRecord;
+use Illuminate\Validation\ValidationException;
 
 class CreateRider extends CreateRecord
 {
@@ -18,6 +19,7 @@ class CreateRider extends CreateRecord
     protected function mutateFormDataBeforeCreate(array $data): array
     {
         $data['name'] = $this->buildFullName($data);
+        $this->validateFullName($data['name']);
 
         unset($data['first_names'], $data['last_names']);
 
@@ -48,5 +50,15 @@ class CreateRider extends CreateRecord
         ])
             ->filter(fn (mixed $value): bool => filled($value))
             ->implode(' '));
+    }
+
+    protected function validateFullName(string $name): void
+    {
+        if ($name === '' || preg_match('/^[\pL\s]+$/u', $name) !== 1) {
+            throw ValidationException::withMessages([
+                'data.first_names' => 'Revisa los nombres del rider. Solo se permiten letras y espacios.',
+                'data.last_names' => 'Revisa los apellidos del rider. Solo se permiten letras y espacios.',
+            ]);
+        }
     }
 }

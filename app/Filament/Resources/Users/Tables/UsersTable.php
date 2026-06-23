@@ -24,6 +24,7 @@ class UsersTable
                         User::ROLE_ADMIN => 'Admin',
                         User::ROLE_MARKETING => 'Marketing',
                         User::ROLE_BRANCH_MANAGER => 'Encargado de sucursal',
+                        User::ROLE_ADVISOR => 'Asesor',
                         default => $state,
                     })
                     ->badge()
@@ -31,6 +32,7 @@ class UsersTable
                         User::ROLE_ADMIN => 'danger',
                         User::ROLE_MARKETING => 'info',
                         User::ROLE_BRANCH_MANAGER => 'success',
+                        User::ROLE_ADVISOR => 'warning',
                         default => 'gray',
                     })
                     ->sortable(),

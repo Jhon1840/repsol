@@ -21,6 +21,7 @@ class ViewRider extends ViewRecord
         $this->record->load([
             'creator',
             'editor',
+            'auditLogs.actor',
             'movements' => fn ($query) => $query
                 ->with(['actor', 'document.uploader'])
                 ->latest('occurred_at'),

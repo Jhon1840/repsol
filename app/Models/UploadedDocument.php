@@ -56,6 +56,10 @@ class UploadedDocument extends Model
 
     public function scopeVisibleTo(Builder $query, ?User $user): Builder
     {
+        if ($user?->isAdvisor()) {
+            return $query->whereHas('rider', fn (Builder $query): Builder => $query->visibleTo($user));
+        }
+
         if (! $branch = $user?->branchScope()) {
             return $query;
         }

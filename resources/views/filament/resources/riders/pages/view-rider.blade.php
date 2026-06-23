@@ -3,6 +3,20 @@
     @php($creationLabel = $record->creation_source === 'excel' ? 'Excel' : ($record->creator?->name ?? 'Sistema'))
     @php($lastEditorLabel = $record->editor?->name)
     @php($relatedDocuments = $this->getRelatedDocuments())
+    @php($auditFieldLabels = [
+        'rider_id' => 'ID',
+        'name' => 'Nombre',
+        'branch' => 'Sucursal',
+        'rango' => 'Rango',
+        'created_by' => 'Creado por',
+        'updated_by' => 'Editado por',
+        'creation_source' => 'Origen',
+    ])
+    @php($auditEventLabels = [
+        'created' => 'Creacion',
+        'updated' => 'Edicion',
+        'deleted' => 'Eliminacion',
+    ])
 
     <div class="grid min-w-0 gap-6">
         <section class="min-w-0 rounded-2xl border border-slate-200/70 bg-white/95 p-5 shadow-sm dark:border-slate-800 dark:bg-slate-950/90 sm:p-6">
@@ -53,6 +67,65 @@
                         {{ $lastEditorLabel ? (optional($record->updated_at)->format('d/m/Y H:i') ?? '-') : 'Sin ediciones manuales' }}
                     </p>
                 </div>
+            </div>
+        </section>
+
+        <section class="min-w-0 overflow-hidden rounded-2xl border border-slate-200/70 bg-white/95 p-5 shadow-sm dark:border-slate-800 dark:bg-slate-950/90 sm:p-6">
+            <div class="mb-4">
+                <h2 class="text-lg font-semibold text-slate-950 dark:text-white">Audit logs del rider</h2>
+                <p class="text-sm text-slate-500">Registra quien cambio el rider, cuando paso y que valores se guardaron.</p>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="min-w-[860px] table-fixed divide-y divide-slate-200 text-xs dark:divide-slate-800 sm:text-sm">
+                    <thead>
+                        <tr class="text-left text-xs uppercase tracking-[0.1em] text-slate-500 lg:tracking-[0.18em]">
+                            <th class="w-32 pb-3 pr-4">Fecha</th>
+                            <th class="w-32 pb-3 pr-4">Accion</th>
+                            <th class="w-40 pb-3 pr-4">Usuario</th>
+                            <th class="pb-3 pr-4">Cambios</th>
+                            <th class="w-36 pb-3 pr-4">IP</th>
+                            <th class="w-40 pb-3">Origen</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 dark:divide-slate-900">
+                        @forelse ($record->auditLogs as $auditLog)
+                            @php($newValues = $auditLog->new_values ?? [])
+                            @php($oldValues = $auditLog->old_values ?? [])
+                            @php($changedFields = array_unique([...array_keys($oldValues), ...array_keys($newValues)]))
+
+                            <tr>
+                                <td class="py-3 pr-4 text-slate-600 dark:text-slate-300">{{ optional($auditLog->occurred_at)->format('d/m/Y H:i') ?? '-' }}</td>
+                                <td class="py-3 pr-4 font-medium text-slate-900 dark:text-white">{{ $auditEventLabels[$auditLog->event] ?? $auditLog->event }}</td>
+                                <td class="py-3 pr-4 text-slate-600 dark:text-slate-300">
+                                    <span class="block truncate">{{ $auditLog->actor?->name ?? 'Sistema' }}</span>
+                                </td>
+                                <td class="py-3 pr-4 text-slate-600 dark:text-slate-300">
+                                    <div class="space-y-1">
+                                        @forelse ($changedFields as $field)
+                                            <p>
+                                                <span class="font-semibold text-slate-900 dark:text-white">{{ $auditFieldLabels[$field] ?? $field }}:</span>
+                                                <span>{{ filled($oldValues[$field] ?? null) ? $oldValues[$field] : '-' }}</span>
+                                                <span class="mx-1 text-slate-400">→</span>
+                                                <span>{{ filled($newValues[$field] ?? null) ? $newValues[$field] : '-' }}</span>
+                                            </p>
+                                        @empty
+                                            <p>Sin cambios de campos auditables.</p>
+                                        @endforelse
+                                    </div>
+                                </td>
+                                <td class="py-3 pr-4 text-slate-600 dark:text-slate-300">{{ $auditLog->ip_address ?? '-' }}</td>
+                                <td class="py-3 text-slate-600 dark:text-slate-300">
+                                    <span class="block truncate" title="{{ $auditLog->url ?? '-' }}">{{ $auditLog->method ?? '-' }} {{ $auditLog->url ? parse_url($auditLog->url, PHP_URL_PATH) : '' }}</span>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="6" class="py-6 text-center text-slate-500">Todavia no hay audit logs para este rider.</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
             </div>
         </section>
 

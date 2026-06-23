@@ -21,6 +21,8 @@ class User extends Authenticatable implements FilamentUser
 
     public const ROLE_BRANCH_MANAGER = 'branch_manager';
 
+    public const ROLE_ADVISOR = 'advisor';
+
     public const RIDER_BRANCH_SCOPED_ROLES = [
         self::ROLE_MARKETING,
         self::ROLE_BRANCH_MANAGER,
@@ -74,6 +76,10 @@ class User extends Authenticatable implements FilamentUser
 
     public function canAccessPanel(Panel $panel): bool
     {
+        if ($this->isAdvisor()) {
+            return true;
+        }
+
         if ($this->hasRiderBranchScopedRole()) {
             return filled($this->branch);
         }
@@ -89,6 +95,11 @@ class User extends Authenticatable implements FilamentUser
     public function isBranchManager(): bool
     {
         return $this->role === self::ROLE_BRANCH_MANAGER;
+    }
+
+    public function isAdvisor(): bool
+    {
+        return $this->role === self::ROLE_ADVISOR;
     }
 
     public function hasRiderBranchScopedRole(): bool
