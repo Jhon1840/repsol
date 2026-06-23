@@ -104,7 +104,7 @@ class ListRiders extends ListRecords
                 ->label('Exportar riders')
                 ->icon('heroicon-o-arrow-down-tray')
                 ->color('gray')
-                ->visible(fn (): bool => auth()->user()?->isAdmin() === true)
+                ->visible(fn (): bool => $this->canExportRiders())
                 ->schema([
                     Select::make('creator_role')
                         ->label('Rol que creó al rider')
@@ -120,7 +120,7 @@ class ListRiders extends ListRecords
 
     public function exportRiders(?string $creatorRole = null): StreamedResponse
     {
-        abort_unless(auth()->user()?->isAdmin() === true, 403);
+        abort_unless($this->canExportRiders(), 403);
 
         $filename = 'riders-'.now()->format('Y-m-d-His').'.xlsx';
 
@@ -168,8 +168,9 @@ class ListRiders extends ListRecords
     protected function exportRidersQuery(?string $creatorRole = null): Builder
     {
         return Rider::query()
+            ->visibleTo(auth()->user())
             ->with(['creator', 'editor'])
-            ->withPointsBalance()
+            ->withPointsBalance(auth()->user())
             ->when(filled($creatorRole), fn (Builder $query): Builder => $query
                 ->whereHas('creator', fn (Builder $query): Builder => $query->where('role', $creatorRole)))
             ->orderBy('updated_at', 'desc');
@@ -183,6 +184,13 @@ class ListRiders extends ListRecords
             User::ROLE_BRANCH_MANAGER => 'Encargado de sucursal',
             User::ROLE_ADVISOR => 'Asesor',
         ];
+    }
+
+    protected function canExportRiders(): bool
+    {
+        $user = auth()->user();
+
+        return $user?->isAdmin() === true || $user?->role === User::ROLE_MARKETING;
     }
 
     public function getHeader(): ?View
