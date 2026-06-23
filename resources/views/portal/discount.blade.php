@@ -237,44 +237,34 @@
                 let wasInsufficient = false;
 
                 const sendInsufficientPointsNotification = () => {
-                    if (window.FilamentNotification) {
-                        new window.FilamentNotification()
-                            .title(insufficientPointsText)
-                            .danger()
-                            .send();
-
-                        return;
-                    }
-
                     document.querySelector('[data-insufficient-points-alert]')?.remove();
 
-                    const container = document.querySelector('[data-portal-notifications]')
-                        || document.body.appendChild(document.createElement('div'));
-
-                    container.dataset.portalNotifications = 'true';
-                    container.className = 'fi-no fi-align-end fi-vertical-align-start';
-                    container.setAttribute('aria-live', 'assertive');
-                    container.setAttribute('aria-atomic', 'true');
-
-                    const notification = document.createElement('div');
-                    notification.dataset.insufficientPointsAlert = 'true';
-                    notification.className = 'fi-no-notification';
-                    notification.role = 'alert';
-                    notification.style.visibility = 'visible';
-                    notification.innerHTML = `
-                        <div class="fi-no-notification-icon" aria-hidden="true">⚠</div>
-                        <div class="fi-no-notification-main">
-                            <div class="fi-no-notification-text">
-                                <div class="fi-no-notification-title">${insufficientPointsText}</div>
-                                <div class="fi-no-notification-body">Reduce la cantidad o selecciona un artículo de menor valor.</div>
+                    const alert = document.createElement('div');
+                    alert.dataset.insufficientPointsAlert = 'true';
+                    alert.className = 'rider-points-alert-backdrop';
+                    alert.innerHTML = `
+                        <div class="rider-points-alert" role="alertdialog" aria-modal="true" aria-labelledby="insufficient-points-alert-title" aria-describedby="insufficient-points-alert-body">
+                            <div class="rider-points-alert-icon" aria-hidden="true">!</div>
+                            <div class="rider-points-alert-content">
+                                <h2 id="insufficient-points-alert-title">Puntos insuficientes</h2>
+                                <p id="insufficient-points-alert-body">${insufficientPointsText}</p>
+                                <small>Reduce la cantidad o selecciona un artículo de menor valor.</small>
                             </div>
+                            <button type="button" class="rider-points-alert-button">Entendido</button>
                         </div>
-                        <button type="button" class="fi-no-notification-close-btn" aria-label="Cerrar alerta">×</button>
                     `;
 
-                    notification.querySelector('button')?.addEventListener('click', () => notification.remove());
-                    container.appendChild(notification);
-                    window.setTimeout(() => notification.remove(), 5000);
+                    const closeAlert = () => alert.remove();
+
+                    alert.addEventListener('click', (event) => {
+                        if (event.target === alert) {
+                            closeAlert();
+                        }
+                    });
+                    alert.querySelector('button')?.addEventListener('click', closeAlert);
+
+                    document.body.appendChild(alert);
+                    alert.querySelector('button')?.focus();
                 };
 
                 const syncLabel = () => {
