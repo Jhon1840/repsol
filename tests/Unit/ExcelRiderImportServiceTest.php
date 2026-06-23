@@ -127,6 +127,39 @@ class ExcelRiderImportServiceTest extends TestCase
         $this->assertSame('RACING', $preview['new_products'][0]['oil_type']);
     }
 
+    public function test_preview_limits_payload_but_keeps_total_counts(): void
+    {
+        Storage::fake('local');
+
+        $rows = [
+            ['Sucursal', 'Codigo', 'Nombre del Rider', 'N Documento', 'Articulo', 'Descripcion', 'Cantidad', 'Litros', 'PtsSku', 'Total Puntos'],
+        ];
+
+        for ($index = 1; $index <= 12; $index++) {
+            $rows[] = [
+                'Santa Cruz',
+                'PYA'.str_pad((string) $index, 9, '0', STR_PAD_LEFT),
+                'Rider '.$index,
+                'NV-'.$index,
+                'RPP'.str_pad((string) $index, 4, '0', STR_PAD_LEFT),
+                'SMARTER SPORT '.$index,
+                1,
+                2,
+                200,
+                400,
+            ];
+        }
+
+        $service = new ExcelRiderImportService;
+        $preview = $service->previewImport($this->uploadedExcel($rows));
+
+        $this->assertTrue($preview['has_new_records']);
+        $this->assertSame(12, $preview['new_riders_count']);
+        $this->assertSame(12, $preview['new_products_count']);
+        $this->assertCount(8, $preview['new_riders']);
+        $this->assertCount(8, $preview['new_products']);
+    }
+
     public function test_it_creates_missing_products_from_excel_data_when_importing(): void
     {
         Storage::fake('local');
@@ -149,6 +182,26 @@ class ExcelRiderImportServiceTest extends TestCase
         ]);
         $this->assertSame('RPP999', $document->metadata['created_products'][0]['code']);
         $this->assertSame(300, $document->metadata['parsed_points']);
+    }
+
+    public function test_it_accepts_truncated_total_points_header_from_exported_excel(): void
+    {
+        $service = new ExcelRiderImportService;
+        $path = $this->createExcelFile([
+            ['Sucursal', 'Codigo', 'Nombre del Rider', 'N Documento', 'Articulo', 'Descripcion', 'Cantidad', 'Litros', 'PtsSku', 'Total Pur', 'Precio', 'Descuen', 'Importe'],
+            ['Santa Cruz', 'PYA675811032', 'Pablo German Arteaga Revollo', 1207081, 'RPP2065RHC', 'SMARTER SPORT 4T 15W-50 12X1L', '0,17', '2,04', 200, 400, 170, 0, 170],
+            ['Santa Cruz', 'PYA14253698', 'Rigoberto Moy Viri', 1207058, 'RPP2065THC', 'SMARTER SPORT 4T 20W-50 12X1L', '0,17', '2,04', 200, 400, 170, 0, 170],
+        ]);
+
+        $parsed = $service->extractImportData($path);
+
+        $this->assertCount(2, $parsed['parsed_riders']);
+        $this->assertSame('PYA675811032', $parsed['parsed_riders'][0]['rider_id']);
+        $this->assertSame('SANTA CRUZ', $parsed['parsed_riders'][0]['branch']);
+        $this->assertSame(400.0, $parsed['parsed_riders'][0]['points_total']);
+        $this->assertSame('PYA14253698', $parsed['parsed_riders'][1]['rider_id']);
+        $this->assertSame(400.0, $parsed['parsed_riders'][1]['points_total']);
+        $this->assertSame([], $parsed['skipped_items']);
     }
 
     public function test_it_reads_total_points_for_excel_without_branch_column(): void
